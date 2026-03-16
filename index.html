@@ -106,20 +106,42 @@ const TR={x:OX+TW,y:OY},TL={x:OX,y:OY};
 const BR={x:OX+TW,y:OY+TH},BL={x:OX,y:OY+TH};
 const R=10;
 
-// --- 물리 상수 ---
+// --- 물리 상수 (SLDT v1.0.2 구조 참조) ---
+// SLDT는 쿠션 반사를 4모드(NS/S/R2R/S2R)로 나누고
+// BounceFriction_CusPlate, Rolling_Friction_CoEfficient 등을 사용.
+// 실제 당구 물리 표준값 + SLDT 구조 기반 보정:
+//
+//  실제 공: 질량 0.21kg, 반지름 30.85mm
+//  테이블: 바닥 마찰계수 ~0.2 (동마찰), 쿠션 반발 0.85-0.90
+//  쿠션 고무: 마찰계수 ~0.08-0.15
 const P = {
-  mu_felt:    0.0020,   // 바닥 동마찰
-  mu_cushion: 0.04,     // 쿠션 마찰 (스핀→접선 전달, 첫쿠션 적당 + 4~5쿠션 효과)
-  restitution:0.88,     // 쿠션 반발
-  spinX_decay_base:0.15,// 좌우 스핀 감쇠 (쿠션) — 스핀이 오래 살아남도록
-  spinX_decay_ang: 0.08,// 입사각 보정 감쇠
-  spinY_decay_cush:0.35,// 전후 스핀 쿠션 감쇠
-  spinY_felt_couple:0.0006,// spinY → 속도 전달율 (바닥마찰)
-  spinX_curve:0.00012,  // spinX → 커브 (바닥 마찰)
-  squirt:     0.007,    // 스쿼트
-  reverse_grip:2.2,     // 리버스 English 그립 배율 (러닝 대비)
-  min_spd:    0.12,
-  spinY_to_vn:0.08,     // spinY가 쿠션 반사 법선에 미치는 영향
+  // 바닥 마찰 (Friction_on_Plate_Prime)
+  mu_felt:      0.0018,   // 동마찰 — 슬라이딩 감속
+  mu_roll:      0.0008,   // 구름 마찰 — 롤링 시 추가 감속 (SLDT: Rolling_Friction_CoEfficient)
+
+  // 쿠션 (BounceFriction_CusPlate)
+  mu_cushion:   0.06,     // 쿠션 고무 마찰 (스핀→접선 전달)
+  restitution:  0.86,     // 쿠션 법선 반발계수
+  restitution_t:0.92,     // 쿠션 접선 반발계수 (SLDT: 법선/접선 분리)
+
+  // 스핀 감쇠 (쿠션 접촉 시)
+  spinX_decay_base:0.12,  // 사이드스핀 기본 감쇠
+  spinX_decay_ang: 0.06,  // 입사각 보정 (가파를수록 감쇠 적음)
+  spinY_decay_cush:0.25,  // 전후진 스핀 쿠션 감쇠
+
+  // 스핀-바닥 상호작용
+  spinY_felt_couple:0.0005,// spinY → 속도 가감속 (Follow/Draw)
+  spinX_curve:  0.00010,  // spinX → 수평 커브 (바닥 마찰 경유)
+
+  // 스쿼트 (SLDT: SquirtAngle, SquirtLength)
+  squirt:       0.006,    // 스쿼트 편향율
+
+  // 리버스 English (SLDT: Bounce_DefS → 슬라이딩 반사 모드)
+  reverse_grip: 2.0,      // 리버스 그립 배율 (러닝 1.0 대비)
+
+  // 기타
+  min_spd:      0.10,     // 정지 판정 속도
+  spinY_to_vn:  0.06,     // spinY가 법선 반사에 미치는 영향 (Follow=더 튕김)
 };
 
 // --- 당점 ---
@@ -329,23 +351,21 @@ function cushionBounce(b, edge){
   const theta=Math.atan2(Math.abs(vn),Math.abs(vt)+0.01);
   const impF=Math.abs(vn)/P.restitution;
 
-  // 법선 반사 + 반발
+  // ── 법선: 반발계수 적용 (SLDT: Bounce_pure → Bounce_DefNS)
   vn = -vn * P.restitution;
 
-  // spinY → 법선 영향 (Follow=더 튕김, Draw=덜 튕김)
+  // ── 접선: 접선 반발계수 적용 (SLDT: 법선/접선 분리 모델)
+  vt *= P.restitution_t;
+
+  // spinY → 법선 보정 (Follow=더 튕김, Draw=덜 튕김)
   vn += b.sy * P.spinY_to_vn * Math.sign(vn);
 
-  // ★ spinX → 접선 방향 (Running vs Reverse 비대칭)
-  //
-  // Running English: 스핀이 접선 이동방향과 같음 → 궤적 확장
-  // Reverse English: 스핀이 접선 이동방향 반대 → 쿠션 그립 → 궤적 축소
-  //
-  // 리버스는 쿠션 고무를 움켜쥐는 효과로 러닝보다 1.8배 강한 영향
+  // ── spinX → 접선 방향 (Running vs Reverse 비대칭)
+  // SLDT: BounceFriction_CusPlate → 쿠션 고무판 마찰
   // 스핀 부호: 시계방향(+) → 상단 접촉면 우측이동 → 마찰 좌측 → vx 감소
-  //            상단/우측 = -1, 하단/좌측 = +1
   const sxSign=(edge==='top'||edge==='right')?-1:1;
   const spinForce = P.mu_cushion * b.sx * impF * sxSign;
-  const isReverse = (spinForce * vt < 0); // 스핀이 진행방향 반대 = 리버스
+  const isReverse = (spinForce * vt < 0);
   const gripMult = isReverse ? P.reverse_grip : 1.0;
   vt += spinForce * gripMult;
 
@@ -377,8 +397,11 @@ function physicsStep(b){
   const spd=Math.hypot(b.vx,b.vy);
   if(spd<P.min_spd)return false;
 
-  // 바닥 동마찰
-  const f=1-P.mu_felt;
+  // 바닥 마찰 (SLDT: Friction_on_Plate_Prime + Rolling_Friction_CoEfficient)
+  // 슬라이딩 마찰 + 구름 마찰 (속도 낮을수록 구름 마찰 비중 증가)
+  const rollRatio = Math.min(1, spd / 3); // 고속=슬라이딩, 저속=구름
+  const mu = P.mu_felt * rollRatio + P.mu_roll * (1 - rollRatio);
+  const f = 1 - mu;
   b.vx*=f; b.vy*=f;
 
   // --- spinY ↔ 속도 상호작용 ---
