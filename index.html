@@ -486,16 +486,16 @@ function drawTable(){
   const oT=PD-4, oB=OY+TH+(CU+RL)+8, oL=PD-8, oR=OX+TW+(CU+RL)+8;
   X.font='bold 9px sans-serif';X.textAlign='center';X.textBaseline='middle';
 
-  // 모든 포인트 좌표+번호를 미리 계산
+  // 28개 포인트 (각 레일 독립, 코너 중복 포함)
   const pts=[];
-  // 하단 장쿠션 우→좌: 0(우하)~8(좌하)
+  // 하단 장축 우→좌: 0~8 (9개)
   for(let i=0;i<=8;i++) pts.push({x:OX+TW-i*(TW/8),y:ryB,lx:OX+TW-i*(TW/8),ly:oB});
-  // 좌측 단쿠션 하→상: 9~11(중간3개) + 12(좌상코너)
-  for(let i=1;i<=4;i++) pts.push({x:rxL,y:OY+TH-i*(TH/4),lx:oL,ly:OY+TH-i*(TH/4)});
-  // 상단 장쿠션 좌→우: 13~19(중간7개) + 20(우상코너)
-  for(let i=1;i<=8;i++) pts.push({x:OX+i*(TW/8),y:ryT,lx:OX+i*(TW/8),ly:oT});
-  // 우측 단쿠션 상→하: 21~23(중간3개)
-  for(let i=1;i<=3;i++) pts.push({x:rxR,y:OY+i*(TH/4),lx:oR,ly:OY+i*(TH/4)});
+  // 좌측 단축 하→상: 9~13 (5개)
+  for(let i=0;i<=4;i++) pts.push({x:rxL,y:OY+TH-i*(TH/4),lx:oL,ly:OY+TH-i*(TH/4)});
+  // 상단 장축 좌→우: 14~22 (9개)
+  for(let i=0;i<=8;i++) pts.push({x:OX+i*(TW/8),y:ryT,lx:OX+i*(TW/8),ly:oT});
+  // 우측 단축 상→하: 23~27 (5개)
+  for(let i=0;i<=4;i++) pts.push({x:rxR,y:OY+i*(TH/4),lx:oR,ly:OY+i*(TH/4)});
 
   // 전부 그리기
   for(let i=0;i<pts.length;i++){
