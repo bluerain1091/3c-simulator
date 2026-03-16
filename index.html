@@ -122,10 +122,10 @@ const P = {
 };
 
 // --- 당점 ---
-let tipX = 2.0;   // -4 ~ +4 (좌우, 0.5단위) — 기본 10:30 방향
-let tipY = 2.0;   // -4 ~ +4 (상하, 0.5단위) — 기본 10:30 방향
+let tipX = -2.0;  // -4 ~ +4 (좌우) — 기본 10:30 = 왼쪽 상단
+let tipY = 2.0;   // -4 ~ +4 (상하) — 기본 10:30 = 상단
 const MISCUE_R = 4.0;
-const STD_TX = 2, TIP_ADJ = 2.5; // 시스템 기준: 10:30 방향 (tipX=2)
+const STD_RUNNING = 2, TIP_ADJ = 2.5; // 시스템 기준: 러닝 2팁 (10:30 방향)
 
 // --- 상태 ---
 let power=7, sqtOn=false, showPP=true;
@@ -296,7 +296,9 @@ function c3P(v,s){v=Math.max(0,Math.min(50,v));const pts=s.c3;
 
 function calcTraj(cv_,c1h,c1v,s){
   if(c1v===null||cv_===null)return null;
-  const adj=(tipX-STD_TX)*TIP_ADJ;
+  // 방향 인식 러닝량: 좌향이면 -tipX가 러닝, 우향이면 tipX가 러닝
+  const running=(s===SL)?-tipX:tipX;
+  const adj=(running-STD_RUNNING)*TIP_ADJ;
   const c3v=(cv_-c1v)+adj;
   if(c3v<0||c3v>50)return{c1:c1h,c2:null,c3:null,c3v,oor:true};
   const c3p=c3P(c3v,s);
@@ -448,7 +450,7 @@ function startSim(){
   ball.vx=ndx*power; ball.vy=ndy*power;
 
   // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
-  ball.sx = tipX;                // 좌우 사이드스핀 (방향 그대로)
+  ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
   ball.sy = tipY * power * 0.15; // 상하 전후진 스핀 (파워에 비례)
 
   ghost={x:ball.x,y:ball.y};
@@ -554,9 +556,9 @@ function updateInfo(cv_,c1v,c3v,oor,dir){
   const s3=c3v!==null?c3v.toFixed(1):'-';
   document.getElementById('v3').textContent=s3+(oor?' !':'');
   if(cv_!==null&&c1v!==null&&c3v!==null){
-    const ts=tipX!==STD_TX?` [X${tipX>0?'+':''}${tipX}]`:'';
-    const ys=tipY!==0?` [Y${tipY>0?'+':''}${tipY}]`:'';
-    document.getElementById('vf').textContent=`${cv_.toFixed(1)} − ${c1v.toFixed(1)} = ${s3}${ts}${ys}`;
+    const rn=(dir==='left')?-tipX:tipX;
+    const ts=(rn!==STD_RUNNING)?` [러닝${rn.toFixed(1)}]`:'';
+    document.getElementById('vf').textContent=`${cv_.toFixed(1)} − ${c1v.toFixed(1)} = ${s3}${ts}`;
   }else document.getElementById('vf').textContent='수구 − 1쿠션 = 3쿠션';
   const d=document.getElementById('dir');d.textContent=dir==='left'?'← 좌':'우 →';
   d.style.background=dir==='left'?'rgba(100,150,255,.2)':'rgba(255,150,100,.2)';
@@ -607,7 +609,7 @@ function render(){
         let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
         if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
           const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
-        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,tipX,tipY*power*0.15);
+        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,-tipX,tipY*power*0.15);
         drawPP(ppPath);
       }
     }else{resetInfo();}
