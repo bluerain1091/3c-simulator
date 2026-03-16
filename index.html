@@ -8,35 +8,33 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;
   font-family:'Segoe UI',sans-serif;color:#eee;min-height:100vh;justify-content:center}
-h1{margin-bottom:4px;font-size:1.2rem;letter-spacing:1px}
-#info{display:flex;gap:16px;margin-bottom:4px;font-size:.84rem;
-  background:rgba(255,255,255,.08);padding:6px 14px;border-radius:8px;flex-wrap:wrap}
+h1{margin-bottom:4px;font-size:1.15rem;letter-spacing:1px}
+#info{display:flex;gap:14px;margin-bottom:3px;font-size:.82rem;
+  background:rgba(255,255,255,.08);padding:5px 12px;border-radius:8px;flex-wrap:wrap}
 #info span{font-weight:bold;color:#ffd700}
-#controls{display:flex;align-items:center;gap:5px;margin-bottom:5px;
-  background:rgba(255,255,255,.06);padding:5px 12px;border-radius:8px;font-size:.8rem;flex-wrap:wrap}
-#controls label{color:#aaa}
-.tb{width:29px;height:25px;border:1px solid rgba(255,255,255,.2);
-  background:rgba(255,255,255,.06);color:#ccc;border-radius:4px;
-  cursor:pointer;font-size:.76rem;font-weight:bold;transition:.15s}
-.tb:hover{background:rgba(255,255,255,.15);color:#fff}
-.tb.on{background:#d4a017;color:#1a1a2e;border-color:#d4a017}
-.tb.on-n{background:#c0392b;color:#fff;border-color:#c0392b}
-.tb.on-z{background:#555;color:#fff;border-color:#888}
-#tl{font-weight:bold;min-width:95px;text-align:center;font-size:.78rem}
-.sep{width:1px;height:18px;background:rgba(255,255,255,.12);margin:0 4px}
-#pw{width:70px;accent-color:#d4a017}
-#pv{min-width:24px;text-align:center;color:#ffd700;font-weight:bold}
-#dir{font-weight:bold;padding:2px 7px;border-radius:4px;min-width:44px;text-align:center;font-size:.82rem}
-.btn{padding:3px 14px;border:2px solid #d4a017;background:transparent;
-  color:#d4a017;border-radius:5px;font-weight:bold;font-size:.82rem;cursor:pointer;transition:.2s}
+#ctrl{display:flex;align-items:center;gap:6px;margin-bottom:4px;
+  background:rgba(255,255,255,.06);padding:4px 10px;border-radius:8px;font-size:.78rem;flex-wrap:wrap}
+#ctrl label{color:#aaa}
+.sep{width:1px;height:18px;background:rgba(255,255,255,.12);margin:0 3px}
+#pw{width:65px;accent-color:#d4a017}
+#pv{min-width:22px;text-align:center;color:#ffd700;font-weight:bold}
+#dir{font-weight:bold;padding:2px 6px;border-radius:4px;min-width:40px;text-align:center;font-size:.8rem}
+.btn{padding:3px 12px;border:2px solid #d4a017;background:transparent;
+  color:#d4a017;border-radius:5px;font-weight:bold;font-size:.8rem;cursor:pointer;transition:.2s}
 .btn:hover{background:#d4a017;color:#1a1a2e}
 .btn.act{background:#c0392b;border-color:#c0392b;color:#fff}
-#sqt-cb{accent-color:#d4a017;margin-right:2px}
-#stats{font-size:.76rem;color:#aaa;margin-left:6px}
-canvas{border-radius:6px;cursor:crosshair}
-#help{margin-top:4px;font-size:.7rem;color:#666}
-.leg{display:flex;gap:12px;margin-top:3px;font-size:.72rem;color:#888}
-.leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:2px;vertical-align:middle}
+#sqt{accent-color:#d4a017}
+#stats{font-size:.74rem;color:#aaa}
+/* 당점 선택기 */
+#tip-wrap{display:flex;align-items:center;gap:8px}
+#tip-cv{border-radius:50%;cursor:crosshair;border:1px solid rgba(255,255,255,.2)}
+#tip-info{font-size:.74rem;line-height:1.5;min-width:90px}
+#tip-info b{color:#ffd700}
+#miscue-warn{color:#ff4444;font-weight:bold;font-size:.72rem;display:none}
+canvas#cv{border-radius:6px;cursor:crosshair}
+#help{margin-top:3px;font-size:.68rem;color:#555}
+.leg{display:flex;gap:10px;margin-top:2px;font-size:.7rem;color:#777}
+.leg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:2px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -48,104 +46,199 @@ canvas{border-radius:6px;cursor:crosshair}
   <div>공식: <span id="vf">수구 − 1쿠션 = 3쿠션</span></div>
   <div id="dir">-</div>
 </div>
-<div id="controls">
-  <label>팁:</label>
-  <button class="tb" data-t="-4">-4</button><button class="tb" data-t="-3">-3</button>
-  <button class="tb" data-t="-2">-2</button><button class="tb" data-t="-1">-1</button>
-  <button class="tb" data-t="0">0</button><button class="tb" data-t="1">+1</button>
-  <button class="tb" data-t="2">+2</button><button class="tb on" data-t="3">+3</button>
-  <button class="tb" data-t="4">+4</button>
-  <span id="tl">+3 정회전</span>
+<div id="ctrl">
+  <div id="tip-wrap">
+    <canvas id="tip-cv" width="90" height="90"></canvas>
+    <div id="tip-info">
+      좌우(X): <b id="tx-val">+3.0</b><br>
+      상하(Y): <b id="ty-val">0.0</b><br>
+      <span id="tip-type" style="color:#d4a017">정회전</span><br>
+      <span id="miscue-warn">미스큐 위험!</span>
+    </div>
+  </div>
   <div class="sep"></div>
   <label>파워:</label>
   <input type="range" id="pw" min="3" max="14" value="7" step=".5">
   <span id="pv">7</span>
   <div class="sep"></div>
-  <input type="checkbox" id="sqt-cb"><label for="sqt-cb">스쿼트</label>
+  <input type="checkbox" id="sqt"><label for="sqt">스쿼트</label>
   <div class="sep"></div>
   <button class="btn" id="shoot">발사 [Space]</button>
   <span id="stats"></span>
 </div>
 <canvas id="cv"></canvas>
-<div id="help">드래그: 수구 이동 · 마우스: 겨냥 · 클릭: 고정 · Space: 발사 · 1-9: 팁 · R: 리셋 · P: 물리예측 토글</div>
+<div id="help">드래그:이동 · 마우스:겨냥 · 클릭:고정 · Space:발사 · 화살표:당점0.5 · WASD:당점1.0 · R:리셋 · P:물리예측</div>
 <div class="leg">
   <span><i style="background:#88ccff"></i>수구</span>
   <span><i style="background:#ffcc44"></i>1쿠션</span>
   <span><i style="background:#ff8888"></i>3쿠션</span>
-  <span><i style="background:#ff4444"></i>5½ 예측</span>
-  <span><i style="background:#0f0"></i>물리 예측</span>
+  <span><i style="background:#ff4444"></i>5½예측</span>
+  <span><i style="background:#0f0"></i>물리예측</span>
   <span><i style="background:rgba(0,180,255,.7)"></i>연장선</span>
 </div>
 
 <script>
 // ============================================================
-//  3C Simulator v3 — 고급 물리 엔진 + 파이브 앤 하프
+//  3C Simulator v4 — 3D 회전 물리 + 상하좌우 당점
 //
-//  물리 모델:
-//   - 입사각(θ) 기반 반사: 스핀 효과가 θ에 비례
-//   - 쿠션 마찰(μ): 스핀×정규력×μ = 접선 가속
-//   - 스핀 감쇠: 충돌 각도에 따라 가변적
-//   - 스쿼트(Squirt): 강한 English시 발사 방향 편향
-//   - 바닥 동마찰: 속도 비례 감속 + 스핀-유도 커브
-//   - 에너지 손실: 쿠션 반발계수
+//  당점: tipX (좌우 English), tipY (상하 Follow/Draw)
+//   tipX > 0: 정회전(Running), tipX < 0: 역회전(Reverse)
+//   tipY > 0: 밀어치기(Follow/Top), tipY < 0: 끌어치기(Draw/Back)
+//
+//  미스큐: sqrt(tipX² + tipY²) > 4.0 → 타격 불가
+//
+//  물리: spinX(좌우), spinY(전후진)
+//   spinY > 자연회전속도: 마찰이 공을 가속 (Follow)
+//   spinY < 0: 마찰이 공을 감속/역전 (Draw)
 // ============================================================
 
 const cv = document.getElementById('cv');
 const X = cv.getContext('2d');
+const tcv = document.getElementById('tip-cv');
+const TX = tcv.getContext('2d');
 
 // --- 테이블 ---
 const TW=800,TH=400,CU=28,RL=18,PD=40;
 cv.width=TW+(CU+RL)*2+PD*2;
 cv.height=TH+(CU+RL)*2+PD*2;
-const OX=PD+RL+CU, OY=PD+RL+CU;
+const OX=PD+RL+CU,OY=PD+RL+CU;
 const TR={x:OX+TW,y:OY},TL={x:OX,y:OY};
 const BR={x:OX+TW,y:OY+TH},BL={x:OX,y:OY+TH};
-const R=10; // 공 반지름
+const R=10;
 
 // --- 물리 상수 ---
-const PHY = {
-  mu_felt:    0.0022,  // 바닥 동마찰 계수 (프레임당)
-  mu_cushion: 0.12,    // 쿠션 마찰 계수
-  restitution:0.88,    // 쿠션 반발 계수
-  spin_decay_base: 0.55, // 스핀 기본 감쇠 (충돌)
-  spin_decay_angle:0.30, // θ에 의한 추가 감쇠
-  spin_curve: 0.0003,  // 바닥 마찰에 의한 스핀→커브 효과
-  squirt_factor:0.007, // 스쿼트 편향 (rad / tip / power_unit)
-  min_speed:  0.12,    // 정지 판정
+const P = {
+  mu_felt:    0.0020,   // 바닥 동마찰
+  mu_cushion: 0.12,     // 쿠션 마찰
+  restitution:0.88,     // 쿠션 반발
+  spinX_decay_base:0.50,// 좌우 스핀 감쇠 (쿠션)
+  spinX_decay_ang: 0.30,// 입사각 보정 감쇠
+  spinY_decay_cush:0.40,// 전후 스핀 쿠션 감쇠
+  spinY_felt_couple:0.0008,// spinY → 속도 전달율 (바닥마찰)
+  spinX_curve:0.00025,  // spinX → 커브
+  squirt:     0.007,    // 스쿼트
+  min_spd:    0.12,
+  spinY_to_vn:0.08,     // spinY가 쿠션 반사 법선에 미치는 영향
 };
 
-// --- 시스템 / UI ---
-let tip=3, power=7, sqtOn=false, showPhysPred=true;
-const STD_TIP=3, TIP_ADJ=2.5;
+// --- 당점 ---
+let tipX = 3.0;   // -4 ~ +4 (좌우, 0.5단위)
+let tipY = 0.0;   // -4 ~ +4 (상하, 0.5단위)
+const MISCUE_R = 4.0;
+const STD_TX = 3, TIP_ADJ = 2.5;
 
 // --- 상태 ---
+let power=7, sqtOn=false, showPP=true;
 const S={AIM:0,SIM:1};
 let st=S.AIM;
-let ball={x:BR.x-40,y:BR.y-80,vx:0,vy:0,spin:0};
+let ball={x:BR.x-40,y:BR.y-80,vx:0,vy:0,sx:0,sy:0}; // sx=spinX, sy=spinY
 let ghost={x:ball.x,y:ball.y};
-let trail=[], bounces=0, predTraj=null, physPredPath=null;
+let trail=[],bounces=0,predTraj=null,ppPath=null;
 let isDrag=false,aimLk=false,mouse={x:0,y:0},curDir='left';
 
 // ============================================================
-//  포인트 시스템 (양방향 대칭)
+//  당점 선택기 UI (작은 캔버스)
+// ============================================================
+
+function isMiscue(){ return Math.hypot(tipX, tipY) > MISCUE_R; }
+
+function drawTipSelector(){
+  const w=90,h=90,cx=w/2,cy=h/2,r=38;
+  TX.clearRect(0,0,w,h);
+
+  // 배경
+  TX.beginPath();TX.arc(cx,cy,r,0,Math.PI*2);
+  TX.fillStyle='rgba(255,255,255,.08)';TX.fill();
+  TX.strokeStyle='rgba(255,255,255,.2)';TX.lineWidth=1;TX.stroke();
+
+  // 미스큐 한계원
+  const mr = r * (MISCUE_R / 4);
+  TX.beginPath();TX.arc(cx,cy,mr,0,Math.PI*2);
+  TX.strokeStyle='rgba(255,80,80,.3)';TX.lineWidth=1;TX.setLineDash([3,3]);TX.stroke();TX.setLineDash([]);
+
+  // 십자선
+  TX.strokeStyle='rgba(255,255,255,.1)';TX.lineWidth=.5;
+  TX.beginPath();TX.moveTo(cx-r,cy);TX.lineTo(cx+r,cy);TX.stroke();
+  TX.beginPath();TX.moveTo(cx,cy-r);TX.lineTo(cx,cy+r);TX.stroke();
+
+  // 그리드 (0.5팁 간격 — 가이드 점)
+  TX.fillStyle='rgba(255,255,255,.06)';
+  for(let ix=-4;ix<=4;ix+=0.5){
+    for(let iy=-4;iy<=4;iy+=0.5){
+      if(Math.hypot(ix,iy)>4.2)continue;
+      const px=cx+(ix/4)*r, py=cy+(iy/4)*r;
+      TX.beginPath();TX.arc(px,py,.8,0,Math.PI*2);TX.fill();
+    }
+  }
+
+  // 당점 위치
+  const tx = cx + (tipX/4)*r;
+  const ty = cy + (-tipY/4)*r; // Y 반전 (위=양수)
+  const miscue = isMiscue();
+
+  TX.beginPath();TX.arc(tx,ty,5,0,Math.PI*2);
+  if(miscue) TX.fillStyle='#ff2222';
+  else if(tipX>0) TX.fillStyle='#d4a017';
+  else if(tipX<0) TX.fillStyle='#c0392b';
+  else TX.fillStyle='#888';
+  TX.fill();TX.strokeStyle='#fff';TX.lineWidth=1;TX.stroke();
+
+  // 라벨
+  TX.font='bold 8px sans-serif';TX.textAlign='center';TX.fillStyle='rgba(255,255,255,.4)';
+  TX.fillText('밀어',cx,cy-r-3);
+  TX.fillText('끌어',cx,cy+r+8);
+  TX.fillText('좌',cx-r-2,cy+3);
+  TX.fillText('우',cx+r+2,cy+3);
+}
+
+function updateTipUI(){
+  document.getElementById('tx-val').textContent = (tipX>0?'+':'')+tipX.toFixed(1);
+  document.getElementById('ty-val').textContent = (tipY>0?'+':'')+tipY.toFixed(1);
+
+  const miscue = isMiscue();
+  document.getElementById('miscue-warn').style.display = miscue?'block':'none';
+
+  let type='';
+  if(miscue) type='미스큐!';
+  else if(tipY>1) type=tipX>0?'밀어+정회전':'밀어'+(tipX<0?'+역회전':'');
+  else if(tipY<-1) type=tipX>0?'끌어+정회전':'끌어'+(tipX<0?'+역회전':'');
+  else if(tipX>0) type='정회전';
+  else if(tipX<0) type='역회전';
+  else type='무회전';
+
+  const el=document.getElementById('tip-type');
+  el.textContent=type;
+  el.style.color=miscue?'#f44':tipX>0?'#d4a017':tipX<0?'#c0392b':'#aaa';
+
+  drawTipSelector();
+}
+
+// 당점 캔버스 클릭
+tcv.addEventListener('click',e=>{
+  const rect=tcv.getBoundingClientRect();
+  const mx=(e.clientX-rect.left), my=(e.clientY-rect.top);
+  const cx=45,cy=45,r=38;
+  const nx=(mx-cx)/r*4, ny=-(my-cy)/r*4; // Y 반전
+  tipX=Math.round(nx*2)/2; // 0.5 단위 스냅
+  tipY=Math.round(ny*2)/2;
+  tipX=Math.max(-4,Math.min(4,tipX));
+  tipY=Math.max(-4,Math.min(4,tipY));
+  updateTipUI();
+});
+
+updateTipUI();
+
+// ============================================================
+//  포인트 시스템 (양방향)
 // ============================================================
 
 function bP(a,b,v){const p=[],n=v.length-1;for(let i=0;i<=n;i++){const t=i/n;p.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,val:v[i]});}return p;}
-
-const SL={
-  c1:bP(TR,TL,[0,10,20,30,40,50]),
-  c3:bP(BL,BR,[0,10,20,30,40,50]),
-  cs:bP(BR,TR,[50,60,70,80,90]),
-  cl:bP(BR,BL,[50,45,40,35,30,25,20,15,10]),
-  w2:'left',w2x:OX,ss:'right',lbl:'← 좌'
-};
-const SR={
-  c1:bP(TL,TR,[0,10,20,30,40,50]),
-  c3:bP(BR,BL,[0,10,20,30,40,50]),
-  cs:bP(BL,TL,[50,60,70,80,90]),
-  cl:bP(BL,BR,[50,45,40,35,30,25,20,15,10]),
-  w2:'right',w2x:OX+TW,ss:'left',lbl:'우 →'
-};
+const SL={c1:bP(TR,TL,[0,10,20,30,40,50]),c3:bP(BL,BR,[0,10,20,30,40,50]),
+  cs:bP(BR,TR,[50,60,70,80,90]),cl:bP(BR,BL,[50,45,40,35,30,25,20,15,10]),
+  w2:'left',w2x:OX,ss:'right',lbl:'← 좌'};
+const SR={c1:bP(TL,TR,[0,10,20,30,40,50]),c3:bP(BR,BL,[0,10,20,30,40,50]),
+  cs:bP(BL,TL,[50,60,70,80,90]),cl:bP(BL,BR,[50,45,40,35,30,25,20,15,10]),
+  w2:'right',w2x:OX+TW,ss:'left',lbl:'우 →'};
 function mkP(s){return[...s.cl.slice().reverse(),...s.cs.slice(1)];}
 SL.cp=mkP(SL);SR.cp=mkP(SR);
 
@@ -169,8 +262,7 @@ function rayH(sx,sy,dx,dy,ex){
   let bt=1e9,h=null;
   const ts=[{n:'top',ok:dy<0,t:(OY-sy)/dy},{n:'bottom',ok:dy>0,t:(OY+TH-sy)/dy},
     {n:'left',ok:dx<0,t:(OX-sx)/dx},{n:'right',ok:dx>0,t:(OX+TW-sx)/dx}];
-  for(const e of ts){
-    if(!e.ok||e.n===ex||e.t<.001||e.t>=bt)continue;
+  for(const e of ts){if(!e.ok||e.n===ex||e.t<.001||e.t>=bt)continue;
     const hx=sx+dx*e.t,hy=sy+dy*e.t;
     if((e.n==='top'||e.n==='bottom')&&hx>=OX-.5&&hx<=OX+TW+.5){bt=e.t;h={x:hx,y:e.n==='top'?OY:OY+TH,edge:e.n};}
     if((e.n==='left'||e.n==='right')&&hy>=OY-.5&&hy<=OY+TH+.5){bt=e.t;h={x:e.n==='left'?OX:OX+TW,y:hy,edge:e.n};}
@@ -178,16 +270,12 @@ function rayH(sx,sy,dx,dy,ex){
 }
 
 // ============================================================
-//  파이브 앤 하프 시스템 계산
+//  파이브 앤 하프 시스템
 // ============================================================
 
 function detectDir(c1){if(!c1||c1.edge!=='top')return curDir;return c1.x<ball.x?'left':'right';}
-
-function calcC1(bx,by,mx,my){
-  const dx=mx-bx,dy=my-by;
-  if(Math.abs(dx)<.5&&Math.abs(dy)<.5)return null;
-  return rayH(bx,by,dx,dy,null);
-}
+function calcC1(bx,by,mx,my){const dx=mx-bx,dy=my-by;if(Math.abs(dx)<.5&&Math.abs(dy)<.5)return null;return rayH(bx,by,dx,dy,null);}
+function calcC1Val(h,s){return(!h||h.edge!=='top')?null:proj(h.x,h.y,s.c1);}
 
 function calcExt(bx,by,c1x,c1y,s){
   const dx=bx-c1x,dy=by-c1y;
@@ -201,19 +289,14 @@ function calcExt(bx,by,c1x,c1y,s){
   return{val:proj(e.x,e.y,s.cp),hit:e};
 }
 
-function c3P(v,s){
-  v=Math.max(0,Math.min(50,v));const pts=s.c3;
-  for(let i=0;i<pts.length-1;i++){
-    if(v>=pts[i].val&&v<=pts[i+1].val){const t=(v-pts[i].val)/(pts[i+1].val-pts[i].val);
-      return{x:pts[i].x+(pts[i+1].x-pts[i].x)*t,y:pts[i].y+(pts[i+1].y-pts[i].y)*t};}
-  }return{x:pts[pts.length-1].x,y:pts[pts.length-1].y};
-}
-
-function calcC1Val(h,s){return(!h||h.edge!=='top')?null:proj(h.x,h.y,s.c1);}
+function c3P(v,s){v=Math.max(0,Math.min(50,v));const pts=s.c3;
+  for(let i=0;i<pts.length-1;i++){if(v>=pts[i].val&&v<=pts[i+1].val){const t=(v-pts[i].val)/(pts[i+1].val-pts[i].val);
+    return{x:pts[i].x+(pts[i+1].x-pts[i].x)*t,y:pts[i].y+(pts[i+1].y-pts[i].y)*t};}}
+  return{x:pts[pts.length-1].x,y:pts[pts.length-1].y};}
 
 function calcTraj(cv_,c1h,c1v,s){
   if(c1v===null||cv_===null)return null;
-  const adj=(tip-STD_TIP)*TIP_ADJ;
+  const adj=(tipX-STD_TX)*TIP_ADJ;
   const c3v=(cv_-c1v)+adj;
   if(c3v<0||c3v>50)return{c1:c1h,c2:null,c3:null,c3v,oor:true};
   const c3p=c3P(c3v,s);
@@ -226,97 +309,115 @@ function calcTraj(cv_,c1h,c1v,s){
 }
 
 // ============================================================
-//  물리 엔진 (고급)
+//  물리 엔진 — 3D 회전
 // ============================================================
 
 /**
- * 쿠션 충돌 처리 — 입사각 기반 반사
+ * 쿠션 충돌: 입사각(θ) + spinX + spinY 결합
  *
- * vn: 법선 속도 (쿠션 수직), vt: 접선 속도 (쿠션 평행)
- * θ = atan2(|vn|, |vt|) — 입사각
- * 접선 가속 = μ_cushion × ω × |vn|
- * 스핀 감쇠 = base + angle_factor × cos(θ)
+ * spinX: 좌우 사이드스핀 → 접선 방향 힘 (기존)
+ * spinY: 전후진 스핀 → 법선 방향 에너지 보정
+ *   Follow(sy>0): 쿠션 반사 후 속도 증가
+ *   Draw(sy<0): 쿠션 반사 후 속도 감소
  */
 function cushionBounce(b, edge){
-  const horiz = (edge==='top'||edge==='bottom');
-  let vn = horiz ? b.vy : b.vx;   // 법선 성분
-  let vt = horiz ? b.vx : b.vy;   // 접선 성분
+  const hz=(edge==='top'||edge==='bottom');
+  let vn=hz?b.vy:b.vx;
+  let vt=hz?b.vx:b.vy;
 
-  // 입사각
-  const theta = Math.atan2(Math.abs(vn), Math.abs(vt) + 0.01);
+  const theta=Math.atan2(Math.abs(vn),Math.abs(vt)+0.01);
+  const impF=Math.abs(vn)/P.restitution;
 
-  // 법선 반사 + 에너지 손실
-  vn = -vn * PHY.restitution;
+  // 법선 반사 + 반발
+  vn = -vn * P.restitution;
 
-  // 스핀에 의한 접선 가속: F = μ × ω × |impact_force|
-  // impact_force ∝ |vn_before| (충돌 전 법선 속도)
-  const impactForce = Math.abs(vn) / PHY.restitution; // 충돌 전 속도 복원
-  const spinForce = PHY.mu_cushion * b.spin * impactForce;
+  // spinY가 법선 반사에 미치는 영향:
+  // Follow → 법선 방향 속도 약간 증가 (공이 더 튕김)
+  // Draw → 법선 방향 속도 약간 감소
+  vn += b.sy * P.spinY_to_vn * Math.sign(vn);
 
-  // 방향별 부호: 스핀의 접선 효과
-  //  top: +spin → +vt (우측으로), bottom: +spin → -vt
-  //  left: +spin → -vt (위쪽으로), right: +spin → +vt
-  const sign = (edge==='top'||edge==='right') ? 1 : -1;
-  vt += spinForce * sign;
+  // spinX → 접선 방향 (쿠션 마찰)
+  const sxSign=(edge==='top'||edge==='right')?1:-1;
+  vt += P.mu_cushion * b.sx * impF * sxSign;
 
-  // 스핀 감쇠: 충돌각이 가파를수록(θ↑) 감쇠 적음
-  const decay = PHY.spin_decay_base + PHY.spin_decay_angle * Math.cos(theta);
-  b.spin *= (1 - decay);
+  // spinX 감쇠 (입사각 의존)
+  const dxRate = P.spinX_decay_base + P.spinX_decay_ang * Math.cos(theta);
+  b.sx *= (1 - dxRate);
 
-  // 기록
-  if(horiz){ b.vy=vn; b.vx=vt; }
-  else { b.vx=vn; b.vy=vt; }
+  // spinY 감쇠 (쿠션 접촉 시)
+  b.sy *= (1 - P.spinY_decay_cush);
+
+  if(hz){b.vy=vn;b.vx=vt;}else{b.vx=vn;b.vy=vt;}
 }
 
-/** 물리 스텝 (1 프레임) */
-function physStep(b){
-  const spd = Math.hypot(b.vx,b.vy);
-  if(spd < PHY.min_speed) return false;
+/**
+ * 물리 스텝 — spinY(전후진) 통합
+ *
+ * 자연 회전속도: ω_natural = v / R
+ * spinY > ω_natural → 마찰이 공을 가속 (Follow)
+ * spinY < 0 → 마찰이 공을 감속/역전 (Draw)
+ * spinY는 점진적으로 자연 회전속도에 수렴
+ */
+function physicsStep(b){
+  const spd=Math.hypot(b.vx,b.vy);
+  if(spd<P.min_spd)return false;
 
-  // 바닥 동마찰 (속도에 비례하는 감속)
-  const f = 1 - PHY.mu_felt;
-  b.vx *= f;
-  b.vy *= f;
+  // 바닥 동마찰
+  const f=1-P.mu_felt;
+  b.vx*=f; b.vy*=f;
 
-  // 스핀에 의한 커브 (바닥 마찰이 스핀을 수평력으로 변환)
-  // 커브 방향: 스핀 양수 → 우측으로 미세 이동
-  b.vx += b.spin * PHY.spin_curve * spd;
+  // --- spinY ↔ 속도 상호작용 ---
+  // 자연 회전속도 (구르는 상태의 spinY)
+  const natSpin = spd * 0.1; // 스케일된 자연회전
+  const spinDiff = b.sy - natSpin;
+
+  // spinDiff > 0: Follow → 가속, spinDiff < 0: Draw → 감속
+  if(spd > 0.3){
+    const accel = spinDiff * P.spinY_felt_couple;
+    b.vx += (b.vx/spd) * accel;
+    b.vy += (b.vy/spd) * accel;
+  }
+
+  // spinY가 자연 회전에 수렴 (바닥 마찰이 전달)
+  b.sy += (natSpin - b.sy) * 0.015;
+
+  // spinX → 커브 (사이드 스핀이 바닥 마찰 통해 수평력)
+  b.vx += b.sx * P.spinX_curve * spd;
 
   // 이동
-  b.x += b.vx;
-  b.y += b.vy;
+  b.x+=b.vx; b.y+=b.vy;
 
-  // 쿠션 충돌 검사
-  let bounced = false;
-  if(b.y - R <= OY)     { b.y = OY + R;      cushionBounce(b,'top');    bounced=true; }
-  if(b.y + R >= OY + TH){ b.y = OY + TH - R;  cushionBounce(b,'bottom'); bounced=true; }
-  if(b.x - R <= OX)     { b.x = OX + R;      cushionBounce(b,'left');   bounced=true; }
-  if(b.x + R >= OX + TW){ b.x = OX + TW - R;  cushionBounce(b,'right');  bounced=true; }
+  // 쿠션 충돌
+  let bounced=false;
+  if(b.y-R<=OY){b.y=OY+R;cushionBounce(b,'top');bounced=true;}
+  if(b.y+R>=OY+TH){b.y=OY+TH-R;cushionBounce(b,'bottom');bounced=true;}
+  if(b.x-R<=OX){b.x=OX+R;cushionBounce(b,'left');bounced=true;}
+  if(b.x+R>=OX+TW){b.x=OX+TW-R;cushionBounce(b,'right');bounced=true;}
 
   return bounced;
 }
 
-/** 물리 기반 예측 경로 생성 (고스트 시뮬레이션) */
-function calcPhysPred(startX,startY,vx,vy,spin){
-  const g = {x:startX,y:startY,vx,vy,spin};
-  const path = [{x:g.x,y:g.y}];
-  let bc = 0;
-  for(let i=0;i<3000;i++){
-    const spd=Math.hypot(g.vx,g.vy);
-    if(spd<PHY.min_speed)break;
-    const f=1-PHY.mu_felt;g.vx*=f;g.vy*=f;
-    g.vx+=g.spin*PHY.spin_curve*spd;
+/** 물리 예측 경로 */
+function calcPP(sx,sy,vx,vy,spinX,spinY){
+  const g={x:sx,y:sy,vx,vy,sx:spinX,sy:spinY};
+  const path=[{x:g.x,y:g.y}];let bc=0;
+  for(let i=0;i<4000;i++){
+    const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
+    const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
+    const ns=spd*0.1,sd=g.sy-ns;
+    if(spd>.3){const a=sd*P.spinY_felt_couple;g.vx+=(g.vx/spd)*a;g.vy+=(g.vy/spd)*a;}
+    g.sy+=(ns-g.sy)*0.015;
+    g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
-    let bounced=false;
-    if(g.y-R<=OY){g.y=OY+R;cushionBounce(g,'top');bounced=true;}
-    if(g.y+R>=OY+TH){g.y=OY+TH-R;cushionBounce(g,'bottom');bounced=true;}
-    if(g.x-R<=OX){g.x=OX+R;cushionBounce(g,'left');bounced=true;}
-    if(g.x+R>=OX+TW){g.x=OX+TW-R;cushionBounce(g,'right');bounced=true;}
-    if(bounced){bc++;path.push({x:g.x,y:g.y});}
+    let bo=false;
+    if(g.y-R<=OY){g.y=OY+R;cushionBounce(g,'top');bo=true;}
+    if(g.y+R>=OY+TH){g.y=OY+TH-R;cushionBounce(g,'bottom');bo=true;}
+    if(g.x-R<=OX){g.x=OX+R;cushionBounce(g,'left');bo=true;}
+    if(g.x+R>=OX+TW){g.x=OX+TW-R;cushionBounce(g,'right');bo=true;}
+    if(bo){bc++;path.push({x:g.x,y:g.y});}
     if(bc>=4)break;
   }
-  path.push({x:g.x,y:g.y});
-  return path;
+  path.push({x:g.x,y:g.y});return path;
 }
 
 // ============================================================
@@ -324,6 +425,12 @@ function calcPhysPred(startX,startY,vx,vy,spin){
 // ============================================================
 
 function startSim(){
+  if(isMiscue()){
+    document.getElementById('miscue-warn').style.display='block';
+    setTimeout(()=>document.getElementById('miscue-warn').style.display='none',2000);
+    return;
+  }
+
   const c1h=calcC1(ball.x,ball.y,mouse.x,mouse.y);
   if(!c1h||c1h.edge!=='top')return;
 
@@ -333,43 +440,42 @@ function startSim(){
   // 5&half 예측 저장
   const c1v=calcC1Val(c1h,sys);
   const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
-  if(c1v!==null&&ext.val!==null) predTraj=calcTraj(ext.val,c1h,c1v,sys);
+  if(c1v!==null&&ext.val!==null)predTraj=calcTraj(ext.val,c1h,c1v,sys);
 
   // 발사 벡터
-  let dx=c1h.x-ball.x, dy=c1h.y-ball.y;
+  let dx=c1h.x-ball.x,dy=c1h.y-ball.y;
   const len=Math.hypot(dx,dy);
-  let ndx=dx/len, ndy=dy/len;
+  let ndx=dx/len,ndy=dy/len;
 
-  // 스쿼트: 강한 English일 때 조준선 미세 편향
-  if(sqtOn && tip!==0){
-    const sq = -tip * PHY.squirt_factor * (power/7);
-    const cos=Math.cos(sq),sin=Math.sin(sq);
-    const nx=ndx*cos-ndy*sin, ny=ndx*sin+ndy*cos;
-    ndx=nx;ndy=ny;
+  // 스쿼트 (tipX에 의한 편향)
+  if(sqtOn&&tipX!==0){
+    const sq=-tipX*P.squirt*(power/7);
+    const cs=Math.cos(sq),sn=Math.sin(sq);
+    const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;
   }
 
   ball.vx=ndx*power; ball.vy=ndy*power;
 
-  // 스핀: 팁 × 방향부호
+  // 스핀 부여
   const ss=dir==='left'?-1:1;
-  ball.spin=tip*ss;
+  ball.sx = tipX * ss;           // 좌우 사이드스핀
+  ball.sy = tipY * power * 0.15; // 상하 전후진 스핀 (파워에 비례)
 
   ghost={x:ball.x,y:ball.y};
   trail=[];bounces=0;st=S.SIM;aimLk=false;
-
   document.getElementById('shoot').textContent='정지 [Space]';
   document.getElementById('shoot').classList.add('act');
 }
 
 function stopSim(){
-  st=S.AIM;ball.vx=0;ball.vy=0;ball.spin=0;
+  st=S.AIM;ball.vx=0;ball.vy=0;ball.sx=0;ball.sy=0;
   document.getElementById('shoot').textContent='발사 [Space]';
   document.getElementById('shoot').classList.remove('act');
 }
 
 function resetBall(){
   stopSim();ball.x=BR.x-40;ball.y=BR.y-80;
-  trail=[];predTraj=null;physPredPath=null;bounces=0;
+  trail=[];predTraj=null;ppPath=null;bounces=0;
 }
 
 // ============================================================
@@ -377,12 +483,9 @@ function resetBall(){
 // ============================================================
 
 function drawTable(){
-  X.fillStyle='#5a3a1a';
-  rr(X,PD,PD,TW+(CU+RL)*2,TH+(CU+RL)*2,10);X.fill();
-  X.fillStyle='#2d8c3c';
-  X.fillRect(PD+RL,PD+RL,TW+CU*2,TH+CU*2);
-  X.fillStyle='#1b7a30';
-  X.fillRect(OX,OY,TW,TH);
+  X.fillStyle='#5a3a1a';rr(X,PD,PD,TW+(CU+RL)*2,TH+(CU+RL)*2,10);X.fill();
+  X.fillStyle='#2d8c3c';X.fillRect(PD+RL,PD+RL,TW+CU*2,TH+CU*2);
+  X.fillStyle='#1b7a30';X.fillRect(OX,OY,TW,TH);
   X.strokeStyle='#1a6b28';X.lineWidth=.5;
   X.beginPath();X.moveTo(OX+TW/2,OY);X.lineTo(OX+TW/2,OY+TH);X.stroke();
   X.fillStyle='#f0e6c0';
@@ -393,97 +496,68 @@ function dm(x,y){const s=3;X.beginPath();X.moveTo(x,y-s);X.lineTo(x+s,y);X.lineT
 
 function dPts(pts,col,side,a){
   X.font='bold 10px sans-serif';X.textAlign='center';X.textBaseline='middle';X.globalAlpha=a||1;
-  for(const p of pts){
-    X.beginPath();X.arc(p.x,p.y,3,0,Math.PI*2);X.fillStyle=col;X.fill();
-    let lx=p.x,ly=p.y;
-    if(side==='a')ly-=14;if(side==='b')ly+=14;if(side==='b2')ly+=28;
+  for(const p of pts){X.beginPath();X.arc(p.x,p.y,3,0,Math.PI*2);X.fillStyle=col;X.fill();
+    let lx=p.x,ly=p.y;if(side==='a')ly-=14;if(side==='b')ly+=14;if(side==='b2')ly+=28;
     if(side==='l')lx-=16;if(side==='r')lx+=16;
-    X.fillStyle='rgba(255,255,255,.75)';X.fillText(p.val,lx,ly);
-  }X.globalAlpha=1;
+    X.fillStyle='rgba(255,255,255,.75)';X.fillText(p.val,lx,ly);}
+  X.globalAlpha=1;
 }
-function drawPts(s,a){
-  dPts(s.c1,'#ffcc44','a',a);dPts(s.c3,'#ff8888','b',a);
-  dPts(s.cs,'#88ccff',s.ss==='right'?'r':'l',a);
-  dPts(s.cl.slice(1),'#88ccff','b2',a);
-}
+function drawPts(s,a){dPts(s.c1,'#ffcc44','a',a);dPts(s.c3,'#ff8888','b',a);
+  dPts(s.cs,'#88ccff',s.ss==='right'?'r':'l',a);dPts(s.cl.slice(1),'#88ccff','b2',a);}
 
 function drawBall(x,y,showTip){
   X.beginPath();X.arc(x+2,y+2,R,0,Math.PI*2);X.fillStyle='rgba(0,0,0,.3)';X.fill();
-  const g=X.createRadialGradient(x-3,y-3,1,x,y,R);
-  g.addColorStop(0,'#fff');g.addColorStop(1,'#ccc');
-  X.beginPath();X.arc(x,y,R,0,Math.PI*2);X.fillStyle=g;X.fill();
-  X.strokeStyle='#999';X.lineWidth=.5;X.stroke();
+  const g=X.createRadialGradient(x-3,y-3,1,x,y,R);g.addColorStop(0,'#fff');g.addColorStop(1,'#ccc');
+  X.beginPath();X.arc(x,y,R,0,Math.PI*2);X.fillStyle=g;X.fill();X.strokeStyle='#999';X.lineWidth=.5;X.stroke();
   if(!showTip)return;
-  // 당점 가이드
-  const gx=x+28,gy=y,gr=14;
-  X.beginPath();X.arc(gx,gy,gr,0,Math.PI*2);X.fillStyle='rgba(255,255,255,.1)';X.fill();
-  X.strokeStyle='rgba(255,255,255,.25)';X.lineWidth=1;X.stroke();
-  X.strokeStyle='rgba(255,255,255,.12)';X.lineWidth=.5;
+
+  // 캔버스 내 당점 가이드 (2D)
+  const gx=x+30,gy=y,gr=16;
+  X.beginPath();X.arc(gx,gy,gr,0,Math.PI*2);X.fillStyle='rgba(255,255,255,.08)';X.fill();
+  X.strokeStyle='rgba(255,255,255,.2)';X.lineWidth=.8;X.stroke();
+  // 십자
+  X.strokeStyle='rgba(255,255,255,.1)';X.lineWidth=.4;
   X.beginPath();X.moveTo(gx-gr,gy);X.lineTo(gx+gr,gy);X.stroke();
   X.beginPath();X.moveTo(gx,gy-gr);X.lineTo(gx,gy+gr);X.stroke();
-  const tx=gx+(tip/4)*(gr-3),ty=gy;
-  X.beginPath();X.arc(tx,ty,3.5,0,Math.PI*2);
-  X.fillStyle=tip>0?'#d4a017':tip<0?'#c0392b':'#888';
-  X.fill();X.strokeStyle='#fff';X.lineWidth=.8;X.stroke();
-  // 라벨
-  X.font='bold 8px sans-serif';X.textAlign='center';
-  X.fillStyle=tip>0?'#d4a017':tip<0?'#c0392b':'#aaa';
-  X.fillText(tip>0?'정회전':tip<0?'역회전':'무회전',gx,gy+gr+10);
+  // 미스큐 한계
+  const lr=gr*(MISCUE_R/4);
+  X.beginPath();X.arc(gx,gy,lr,0,Math.PI*2);
+  X.strokeStyle='rgba(255,80,80,.2)';X.lineWidth=.5;X.stroke();
+  // 팁 점
+  const tx=gx+(tipX/4)*gr, ty=gy+(-tipY/4)*gr;
+  X.beginPath();X.arc(tx,ty,3,0,Math.PI*2);
+  X.fillStyle=isMiscue()?'#f22':tipX>0?'#d4a017':tipX<0?'#c0392b':'#888';
+  X.fill();X.strokeStyle='#fff';X.lineWidth=.7;X.stroke();
 }
 
-function drawExt(h){
-  if(!h)return;
+function drawExt(h){if(!h)return;
   X.beginPath();X.moveTo(ball.x,ball.y);X.lineTo(h.x,h.y);
   X.strokeStyle='rgba(0,180,255,.6)';X.lineWidth=1.5;X.setLineDash([4,4]);X.stroke();X.setLineDash([]);
-  X.beginPath();X.arc(h.x,h.y,5,0,Math.PI*2);X.fillStyle='rgba(0,180,255,.5)';X.fill();
-  X.strokeStyle='#0af';X.lineWidth=1;X.stroke();
-}
+  X.beginPath();X.arc(h.x,h.y,5,0,Math.PI*2);X.fillStyle='rgba(0,180,255,.5)';X.fill();X.strokeStyle='#0af';X.lineWidth=1;X.stroke();}
 
-function drawAim(h){
-  if(!h)return;
+function drawAim(h){if(!h)return;
   X.beginPath();X.moveTo(ball.x,ball.y);X.lineTo(h.x,h.y);
-  X.strokeStyle='rgba(255,255,80,.45)';X.lineWidth=1.5;X.setLineDash([6,4]);X.stroke();X.setLineDash([]);
-}
+  X.strokeStyle='rgba(255,255,80,.45)';X.lineWidth=1.5;X.setLineDash([6,4]);X.stroke();X.setLineDash([]);}
 
-function drawTraj(t,alpha){
-  if(!t)return;X.globalAlpha=alpha||1;
-  const sx=alpha<1?ghost.x:ball.x,sy=alpha<1?ghost.y:ball.y;
-  X.beginPath();X.moveTo(sx,sy);X.lineTo(t.c1.x,t.c1.y);
-  X.strokeStyle='#ff4444';X.lineWidth=2.5;X.stroke();mk(t.c1.x,t.c1.y,'#ff4444');
+function drawTraj(t,al){if(!t)return;X.globalAlpha=al||1;
+  const sx=al<1?ghost.x:ball.x,sy=al<1?ghost.y:ball.y;
+  X.beginPath();X.moveTo(sx,sy);X.lineTo(t.c1.x,t.c1.y);X.strokeStyle='#ff4444';X.lineWidth=2.5;X.stroke();mk(t.c1.x,t.c1.y,'#ff4444');
   if(t.oor||!t.c2||!t.c3){X.globalAlpha=1;return;}
-  X.beginPath();X.moveTo(t.c1.x,t.c1.y);X.lineTo(t.c2.x,t.c2.y);
-  X.strokeStyle='#ffaa00';X.lineWidth=2;X.stroke();mk(t.c2.x,t.c2.y,'#ffaa00');
-  X.beginPath();X.moveTo(t.c2.x,t.c2.y);X.lineTo(t.c3.x,t.c3.y);
-  X.strokeStyle='#ff6666';X.lineWidth=2;X.setLineDash([5,3]);X.stroke();X.setLineDash([]);
-  mk(t.c3.x,t.c3.y,'#ff6666');X.globalAlpha=1;
-}
+  X.beginPath();X.moveTo(t.c1.x,t.c1.y);X.lineTo(t.c2.x,t.c2.y);X.strokeStyle='#ffaa00';X.lineWidth=2;X.stroke();mk(t.c2.x,t.c2.y,'#ffaa00');
+  X.beginPath();X.moveTo(t.c2.x,t.c2.y);X.lineTo(t.c3.x,t.c3.y);X.strokeStyle='#ff6666';X.lineWidth=2;X.setLineDash([5,3]);X.stroke();X.setLineDash([]);mk(t.c3.x,t.c3.y,'#ff6666');X.globalAlpha=1;}
 
-/** 물리 예측 경로 (녹색 점선) */
-function drawPhysPred(path){
-  if(!path||path.length<2)return;
-  X.beginPath();X.moveTo(path[0].x,path[0].y);
-  for(let i=1;i<path.length;i++)X.lineTo(path[i].x,path[i].y);
-  X.strokeStyle='rgba(0,255,100,.45)';X.lineWidth=2;X.setLineDash([3,5]);X.stroke();X.setLineDash([]);
-  // 끝점 마커
-  const e=path[path.length-1];
-  X.beginPath();X.arc(e.x,e.y,4,0,Math.PI*2);
-  X.fillStyle='rgba(0,255,100,.5)';X.fill();X.strokeStyle='#0f0';X.lineWidth=1;X.stroke();
-}
+function drawPP(path){if(!path||path.length<2)return;
+  X.beginPath();X.moveTo(path[0].x,path[0].y);for(let i=1;i<path.length;i++)X.lineTo(path[i].x,path[i].y);
+  X.strokeStyle='rgba(0,255,100,.4)';X.lineWidth=2;X.setLineDash([3,5]);X.stroke();X.setLineDash([]);
+  const e=path[path.length-1];X.beginPath();X.arc(e.x,e.y,4,0,Math.PI*2);
+  X.fillStyle='rgba(0,255,100,.5)';X.fill();X.strokeStyle='#0f0';X.lineWidth=1;X.stroke();}
 
-function mk(x,y,c){
-  X.beginPath();X.arc(x,y,5,0,Math.PI*2);X.fillStyle=c;
-  const a=X.globalAlpha;X.globalAlpha=Math.min(a,.6);X.fill();
-  X.globalAlpha=a;X.strokeStyle='#fff';X.lineWidth=1;X.stroke();
-}
+function mk(x,y,c){X.beginPath();X.arc(x,y,5,0,Math.PI*2);X.fillStyle=c;
+  const a=X.globalAlpha;X.globalAlpha=Math.min(a,.6);X.fill();X.globalAlpha=a;X.strokeStyle='#fff';X.lineWidth=1;X.stroke();}
 
-function drawTrail(){
-  for(let i=0;i<trail.length;i++){
-    const t=trail[i];t.a*=0.994;if(t.a<.02)continue;
-    X.beginPath();X.arc(t.x,t.y,2,0,Math.PI*2);
-    X.fillStyle=`rgba(255,200,50,${t.a*.5})`;X.fill();
-  }
-  if(trail.length>2000)trail=trail.filter(t=>t.a>=.02);
-}
+function drawTrail(){for(let i=0;i<trail.length;i++){const t=trail[i];t.a*=.994;if(t.a<.02)continue;
+  X.beginPath();X.arc(t.x,t.y,2,0,Math.PI*2);X.fillStyle=`rgba(255,200,50,${t.a*.5})`;X.fill();}
+  if(trail.length>2000)trail=trail.filter(t=>t.a>=.02);}
 
 // ============================================================
 //  UI
@@ -495,32 +569,22 @@ function updateInfo(cv_,c1v,c3v,oor,dir){
   const s3=c3v!==null?c3v.toFixed(1):'-';
   document.getElementById('v3').textContent=s3+(oor?' !':'');
   if(cv_!==null&&c1v!==null&&c3v!==null){
-    const ts=tip!==STD_TIP?` [${tip>0?'+':''}${tip}팁]`:'';
-    document.getElementById('vf').textContent=`${cv_.toFixed(1)} − ${c1v.toFixed(1)} = ${s3}${ts}`;
+    const ts=tipX!==STD_TX?` [X${tipX>0?'+':''}${tipX}]`:'';
+    const ys=tipY!==0?` [Y${tipY>0?'+':''}${tipY}]`:'';
+    document.getElementById('vf').textContent=`${cv_.toFixed(1)} − ${c1v.toFixed(1)} = ${s3}${ts}${ys}`;
   }else document.getElementById('vf').textContent='수구 − 1쿠션 = 3쿠션';
-  const d=document.getElementById('dir');
-  d.textContent=dir==='left'?'← 좌':'우 →';
+  const d=document.getElementById('dir');d.textContent=dir==='left'?'← 좌':'우 →';
   d.style.background=dir==='left'?'rgba(100,150,255,.2)':'rgba(255,150,100,.2)';
   d.style.color=dir==='left'?'#8cf':'#fc8';
 }
-function resetInfo(m){
-  document.getElementById('vc').textContent='-';document.getElementById('v1').textContent='-';
-  document.getElementById('v3').textContent='-';document.getElementById('vf').textContent=m||'수구 − 1쿠션 = 3쿠션';
-}
-
-function updateTip(){
-  document.querySelectorAll('.tb').forEach(b=>{const v=+b.dataset.t;b.classList.remove('on','on-n','on-z');
-    if(v===tip)b.classList.add(v>0?'on':v<0?'on-n':'on-z');});
-  let l='';if(tip>0)l=`+${tip} 정회전`;else if(tip<0)l=`${tip} 역회전`;else l='0 무회전';
-  if(tip===STD_TIP)l+=' (기본)';document.getElementById('tl').textContent=l;
-}
+function resetInfo(m){document.getElementById('vc').textContent='-';document.getElementById('v1').textContent='-';
+  document.getElementById('v3').textContent='-';document.getElementById('vf').textContent=m||'수구 − 1쿠션 = 3쿠션';}
 
 function updateStats(){
   const spd=Math.hypot(ball.vx,ball.vy).toFixed(1);
   document.getElementById('stats').textContent=
-    st===S.SIM?`v:${spd} ω:${ball.spin.toFixed(1)} 쿠션:${bounces}`:
-    bounces>0?`완료 쿠션:${bounces}회`:'';
-}
+    st===S.SIM?`v:${spd} ωX:${ball.sx.toFixed(1)} ωY:${ball.sy.toFixed(1)} 쿠션:${bounces}`:
+    bounces>0?`완료 쿠션:${bounces}회`:'';}
 
 // ============================================================
 //  메인 렌더
@@ -541,183 +605,83 @@ function render(){
       const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
       const cv_=ext.val;
       drawExt(ext.hit);
-
       if(c1v!==null&&cv_!==null){
         const traj=calcTraj(cv_,c1h,c1v,sys);
         drawTraj(traj);
         updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
-
-        // 물리 예측 경로 (녹색)
-        if(showPhysPred){
-          let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);
-          const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
-          if(sqtOn&&tip!==0){
-            const sq=-tip*PHY.squirt_factor*(power/7);
-            const cs=Math.cos(sq),sn=Math.sin(sq);
-            const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;
-          }
+        // 물리 예측
+        if(showPP){
+          let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
+          if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
+            const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
           const ss=dir==='left'?-1:1;
-          physPredPath=calcPhysPred(ball.x,ball.y,ndx*power,ndy*power,tip*ss);
-          drawPhysPred(physPredPath);
+          ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,tipX*ss,tipY*power*0.15);
+          drawPP(ppPath);
         }
       }else{drawAim(c1h);resetInfo();}
     }else{drawAim(c1h);resetInfo('상단 쿠션을 겨냥하세요');}
-
     drawBall(ball.x,ball.y,true);
-
   }else{
-    physStep(ball);
+    const bo=physicsStep(ball);
+    if(bo)bounces++;
     trail.push({x:ball.x,y:ball.y,a:1});
-
-    // 쿠션 카운트 (trail 기반)
-    const spd=Math.hypot(ball.vx,ball.vy);
-    if(spd<PHY.min_speed)stopSim();
-
-    const sys=curDir==='left'?SL:SR;
-    drawPts(sys,.25);
+    if(Math.hypot(ball.vx,ball.vy)<P.min_spd)stopSim();
+    if(bounces>=20)stopSim();
+    const sys=curDir==='left'?SL:SR;drawPts(sys,.25);
     if(predTraj)drawTraj(predTraj,.2);
-    drawTrail();
-    drawBall(ball.x,ball.y,false);
+    drawTrail();drawBall(ball.x,ball.y,false);
   }
-
-  updateStats();
-  requestAnimationFrame(render);
+  updateStats();requestAnimationFrame(render);
 }
+
+// ============================================================
+//  유틸리티
+// ============================================================
+
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);
+  c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);
+  c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
 // ============================================================
 //  이벤트
 // ============================================================
 
-// 물리 스텝에서 쿠션 카운트를 위해 physStep 래퍼
-const _origPhysStep = physStep;
-const physStepWrapped = (b) => {
-  const oldX=b.x,oldY=b.y;
-  _origPhysStep(b);
-  // 위치 변화로 쿠션 감지
-  if(Math.abs(b.x-OX-R)<1||Math.abs(b.x-(OX+TW-R))<1||
-     Math.abs(b.y-OY-R)<1||Math.abs(b.y-(OY+TH-R))<1){
-    if(b.x!==oldX||b.y!==oldY){/* counted in cushionBounce */}
-  }
-};
-
-// 쿠션 카운트를 cushionBounce에 통합
-const _origCB = cushionBounce;
-const cushionBounceCount = function(b, edge) {
-  _origCB(b, edge);
-  if(st === S.SIM) bounces++;
-};
-// 패치
-(function(){
-  const origPhys = physStep;
-  window._physOrig = origPhys;
-})();
-
-// physStep 내 cushionBounce 호출을 카운팅 버전으로 교체하기 위해
-// physStep을 다시 정의
-const physStepFinal = function(b){
-  const spd=Math.hypot(b.vx,b.vy);
-  if(spd<PHY.min_speed)return false;
-  const f=1-PHY.mu_felt;b.vx*=f;b.vy*=f;
-  b.vx+=b.spin*PHY.spin_curve*spd;
-  b.x+=b.vx;b.y+=b.vy;
-  if(b.y-R<=OY){b.y=OY+R;cushionBounce(b,'top');if(st===S.SIM)bounces++;}
-  if(b.y+R>=OY+TH){b.y=OY+TH-R;cushionBounce(b,'bottom');if(st===S.SIM)bounces++;}
-  if(b.x-R<=OX){b.x=OX+R;cushionBounce(b,'left');if(st===S.SIM)bounces++;}
-  if(b.x+R>=OX+TW){b.x=OX+TW-R;cushionBounce(b,'right');if(st===S.SIM)bounces++;}
-  if(bounces>=20&&st===S.SIM)stopSim();
-  return true;
-};
-
-// render에서 사용할 physStep 교체
-// 위의 render 함수 내 physStep(ball)을 physStepFinal로 교체하기 위해
-// render를 재정의
-function renderFinal(){
-  X.clearRect(0,0,cv.width,cv.height);
-  drawTable();
-
-  if(st===S.AIM){
-    const c1h=calcC1(ball.x,ball.y,mouse.x,mouse.y);
-    const dir=detectDir(c1h);curDir=dir;
-    const sys=dir==='left'?SL:SR;
-    drawPts(sys,1);
-
-    if(c1h&&c1h.edge==='top'){
-      const c1v=calcC1Val(c1h,sys);
-      const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
-      const cv_=ext.val;
-      drawExt(ext.hit);
-
-      if(c1v!==null&&cv_!==null){
-        const traj=calcTraj(cv_,c1h,c1v,sys);
-        drawTraj(traj);
-        updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
-
-        if(showPhysPred){
-          let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);
-          const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
-          if(sqtOn&&tip!==0){
-            const sq=-tip*PHY.squirt_factor*(power/7);
-            const cs=Math.cos(sq),sn=Math.sin(sq);
-            const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;
-          }
-          const ss=dir==='left'?-1:1;
-          physPredPath=calcPhysPred(ball.x,ball.y,ndx*power,ndy*power,tip*ss);
-          drawPhysPred(physPredPath);
-        }
-      }else{drawAim(c1h);resetInfo();}
-    }else{drawAim(c1h);resetInfo('상단 쿠션을 겨냥하세요');}
-
-    drawBall(ball.x,ball.y,true);
-  }else{
-    physStepFinal(ball);
-    trail.push({x:ball.x,y:ball.y,a:1});
-    const spd=Math.hypot(ball.vx,ball.vy);
-    if(spd<PHY.min_speed)stopSim();
-
-    const sys=curDir==='left'?SL:SR;
-    drawPts(sys,.25);
-    if(predTraj)drawTraj(predTraj,.2);
-    drawTrail();
-    drawBall(ball.x,ball.y,false);
-  }
-
-  updateStats();
-  requestAnimationFrame(renderFinal);
-}
-
-// 유틸
-function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
-function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-
-// 마우스
 function gm(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*(cv.width/r.width),y:(e.clientY-r.top)*(cv.height/r.height)};}
 cv.addEventListener('mousedown',e=>{if(st!==S.AIM)return;const p=gm(e);if(Math.hypot(p.x-ball.x,p.y-ball.y)<=R+8){isDrag=true;cv.style.cursor='grabbing';}});
-cv.addEventListener('mousemove',e=>{const p=gm(e);if(isDrag&&st===S.AIM){ball.x=clamp(p.x,OX+R,OX+TW-R);ball.y=clamp(p.y,OY+R,OY+TH-R);}if(!aimLk)mouse=p;if(!isDrag&&st===S.AIM)cv.style.cursor=Math.hypot(p.x-ball.x,p.y-ball.y)<=R+8?'grab':'crosshair';});
+cv.addEventListener('mousemove',e=>{const p=gm(e);if(isDrag&&st===S.AIM){ball.x=clamp(p.x,OX+R,OX+TW-R);ball.y=clamp(p.y,OY+R,OY+TH-R);}if(!aimLk)mouse=p;
+  if(!isDrag&&st===S.AIM)cv.style.cursor=Math.hypot(p.x-ball.x,p.y-ball.y)<=R+8?'grab':'crosshair';});
 cv.addEventListener('mouseup',()=>{isDrag=false;cv.style.cursor='crosshair';});
 cv.addEventListener('click',e=>{if(st!==S.AIM)return;const p=gm(e);if(Math.hypot(p.x-ball.x,p.y-ball.y)>R+8)aimLk=!aimLk;});
 cv.addEventListener('mouseleave',()=>{isDrag=false;});
 
-// 터치
 cv.addEventListener('touchstart',e=>{e.preventDefault();const p=gm(e.touches[0]);if(st===S.AIM&&Math.hypot(p.x-ball.x,p.y-ball.y)<=R+20)isDrag=true;mouse=p;},{passive:false});
 cv.addEventListener('touchmove',e=>{e.preventDefault();const p=gm(e.touches[0]);if(isDrag&&st===S.AIM){ball.x=clamp(p.x,OX+R,OX+TW-R);ball.y=clamp(p.y,OY+R,OY+TH-R);}if(!aimLk)mouse=p;},{passive:false});
 cv.addEventListener('touchend',()=>{isDrag=false;});
 
-// 키보드
 document.addEventListener('keydown',e=>{
-  const n=+e.key;if(n>=1&&n<=9){tip=n-5;updateTip();return;}
+  // 화살표: 0.5팁 조절
+  if(e.key==='ArrowLeft'){tipX=Math.max(-4,tipX-0.5);updateTipUI();e.preventDefault();return;}
+  if(e.key==='ArrowRight'){tipX=Math.min(4,tipX+0.5);updateTipUI();e.preventDefault();return;}
+  if(e.key==='ArrowUp'){tipY=Math.min(4,tipY+0.5);updateTipUI();e.preventDefault();return;}
+  if(e.key==='ArrowDown'){tipY=Math.max(-4,tipY-0.5);updateTipUI();e.preventDefault();return;}
+  // WASD: 1.0팁 조절
+  if(e.key==='a'||e.key==='A'){tipX=Math.max(-4,tipX-1);updateTipUI();return;}
+  if(e.key==='d'||e.key==='D'){tipX=Math.min(4,tipX+1);updateTipUI();return;}
+  if(e.key==='w'||e.key==='W'){tipY=Math.min(4,tipY+1);updateTipUI();return;}
+  if(e.key==='s'||e.key==='S'){tipY=Math.max(-4,tipY-1);updateTipUI();return;}
+  // 숫자: tipX 직접 설정
+  const n=+e.key;if(n>=1&&n<=9){tipX=(n-5);updateTipUI();return;}
   if(e.code==='Space'){e.preventDefault();st===S.SIM?stopSim():startSim();}
   if(e.key==='r'||e.key==='R')resetBall();
-  if(e.key==='p'||e.key==='P'){showPhysPred=!showPhysPred;}
+  if(e.key==='p'||e.key==='P')showPP=!showPP;
 });
 
-// UI 이벤트
-document.querySelectorAll('.tb').forEach(b=>b.addEventListener('click',()=>{tip=+b.dataset.t;updateTip();}));
 document.getElementById('pw').addEventListener('input',e=>{power=+e.target.value;document.getElementById('pv').textContent=power;});
-document.getElementById('sqt-cb').addEventListener('change',e=>{sqtOn=e.target.checked;});
+document.getElementById('sqt').addEventListener('change',e=>{sqtOn=e.target.checked;});
 document.getElementById('shoot').addEventListener('click',()=>{st===S.SIM?stopSim():startSim();});
 
-updateTip();
-renderFinal();
+render();
 </script>
 </body>
 </html>
