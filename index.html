@@ -111,14 +111,14 @@ const R=10;
 // 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
   mu_felt:      0.0015,   // 바닥 마찰
-  mu_cushion:   0.10,     // 쿠션 마찰 (사이드 스핀→접선)
+  mu_cushion:   0.045,    // 쿠션 마찰 (사이드 스핀 ±0.2 효과)
   restitution:  0.92,     // 쿠션 법선 반발
   spinX_decay:  0.22,     // 사이드스핀 감쇠
-  spinY_decay:  0.12,     // 전후진 스핀 감쇠 (오래 유지)
-  spinY_accel:  0.008,    // spinY → Follow/Draw (팔로우 지배적, 2.5배↑)
+  spinY_decay:  0.10,     // 전후진 스핀 감쇠 (오래 유지)
+  spinY_accel:  0.012,    // spinY → Follow/Draw (팔로우 지배)
   spinX_curve:  0.00005,  // spinX → 커브
   squirt:       0.005,    // 스쿼트
-  reverse_grip: 0.2,      // 리버스 그립 (러닝의 1/5, SLDT 역산)
+  reverse_grip: 1.0,      // 대칭 — 팔로우가 보정
   min_spd:      0.10,
 };
 
@@ -457,7 +457,7 @@ function startSim(){
 
   // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
   ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
-  ball.sy = tipY * power * 0.15; // 상하 전후진 스핀 (파워에 비례)
+  ball.sy = tipY * power * 0.25; // 상하 전후진 스핀 (강화: 팔로우 지배)
 
   ghost={x:ball.x,y:ball.y};
   trail=[];bounces=0;st=S.SIM;aimLk=false;
@@ -647,7 +647,7 @@ function render(){
         let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
         if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
           const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
-        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,-tipX,tipY*power*0.15);
+        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,-tipX,tipY*power*0.25);
         drawPP(ppPath);
       }
     }else{resetInfo();}
