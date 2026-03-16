@@ -9,31 +9,34 @@
 body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;
   font-family:'Segoe UI',sans-serif;color:#eee;min-height:100vh;justify-content:center}
 h1{margin-bottom:4px;font-size:1.2rem;letter-spacing:1px}
-#info{display:flex;gap:18px;margin-bottom:4px;font-size:.85rem;
-  background:rgba(255,255,255,.08);padding:6px 16px;border-radius:8px}
+#info{display:flex;gap:16px;margin-bottom:4px;font-size:.84rem;
+  background:rgba(255,255,255,.08);padding:6px 14px;border-radius:8px;flex-wrap:wrap}
 #info span{font-weight:bold;color:#ffd700}
-#controls{display:flex;align-items:center;gap:6px;margin-bottom:6px;
-  background:rgba(255,255,255,.06);padding:5px 14px;border-radius:8px;font-size:.82rem;flex-wrap:wrap}
+#controls{display:flex;align-items:center;gap:5px;margin-bottom:5px;
+  background:rgba(255,255,255,.06);padding:5px 12px;border-radius:8px;font-size:.8rem;flex-wrap:wrap}
 #controls label{color:#aaa}
-.tb{width:30px;height:26px;border:1px solid rgba(255,255,255,.2);
+.tb{width:29px;height:25px;border:1px solid rgba(255,255,255,.2);
   background:rgba(255,255,255,.06);color:#ccc;border-radius:4px;
-  cursor:pointer;font-size:.78rem;font-weight:bold;transition:.15s}
+  cursor:pointer;font-size:.76rem;font-weight:bold;transition:.15s}
 .tb:hover{background:rgba(255,255,255,.15);color:#fff}
 .tb.on{background:#d4a017;color:#1a1a2e;border-color:#d4a017}
-.tb.on-neg{background:#c0392b;color:#fff;border-color:#c0392b}
-.tb.on-zero{background:#555;color:#fff;border-color:#888}
-#tl{font-weight:bold;min-width:100px;text-align:center}
-.sep{width:1px;height:20px;background:rgba(255,255,255,.15);margin:0 6px}
-#pw{width:80px;accent-color:#d4a017}
-#pv{min-width:28px;text-align:center;color:#ffd700;font-weight:bold}
-#dir{font-weight:bold;padding:2px 8px;border-radius:4px;min-width:48px;text-align:center;font-size:.85rem}
-#shoot-btn{padding:4px 16px;border:2px solid #d4a017;background:transparent;
-  color:#d4a017;border-radius:6px;font-weight:bold;font-size:.85rem;cursor:pointer;transition:.2s}
-#shoot-btn:hover{background:#d4a017;color:#1a1a2e}
-#shoot-btn.active{background:#c0392b;border-color:#c0392b;color:#fff}
-#stats{font-size:.78rem;color:#aaa;margin-left:8px}
+.tb.on-n{background:#c0392b;color:#fff;border-color:#c0392b}
+.tb.on-z{background:#555;color:#fff;border-color:#888}
+#tl{font-weight:bold;min-width:95px;text-align:center;font-size:.78rem}
+.sep{width:1px;height:18px;background:rgba(255,255,255,.12);margin:0 4px}
+#pw{width:70px;accent-color:#d4a017}
+#pv{min-width:24px;text-align:center;color:#ffd700;font-weight:bold}
+#dir{font-weight:bold;padding:2px 7px;border-radius:4px;min-width:44px;text-align:center;font-size:.82rem}
+.btn{padding:3px 14px;border:2px solid #d4a017;background:transparent;
+  color:#d4a017;border-radius:5px;font-weight:bold;font-size:.82rem;cursor:pointer;transition:.2s}
+.btn:hover{background:#d4a017;color:#1a1a2e}
+.btn.act{background:#c0392b;border-color:#c0392b;color:#fff}
+#sqt-cb{accent-color:#d4a017;margin-right:2px}
+#stats{font-size:.76rem;color:#aaa;margin-left:6px}
 canvas{border-radius:6px;cursor:crosshair}
-#help{margin-top:5px;font-size:.72rem;color:#777}
+#help{margin-top:4px;font-size:.7rem;color:#666}
+.leg{display:flex;gap:12px;margin-top:3px;font-size:.72rem;color:#888}
+.leg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:2px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -55,502 +58,481 @@ canvas{border-radius:6px;cursor:crosshair}
   <span id="tl">+3 정회전</span>
   <div class="sep"></div>
   <label>파워:</label>
-  <input type="range" id="pw" min="2" max="12" value="7" step="0.5">
+  <input type="range" id="pw" min="3" max="14" value="7" step=".5">
   <span id="pv">7</span>
   <div class="sep"></div>
-  <button id="shoot-btn">발사 [Space]</button>
+  <input type="checkbox" id="sqt-cb"><label for="sqt-cb">스쿼트</label>
+  <div class="sep"></div>
+  <button class="btn" id="shoot">발사 [Space]</button>
   <span id="stats"></span>
 </div>
 <canvas id="cv"></canvas>
-<div id="help">드래그: 수구 이동 · 마우스: 겨냥 · 클릭: 고정 · Space: 발사 · 1-9: 팁 · R: 리셋</div>
+<div id="help">드래그: 수구 이동 · 마우스: 겨냥 · 클릭: 고정 · Space: 발사 · 1-9: 팁 · R: 리셋 · P: 물리예측 토글</div>
+<div class="leg">
+  <span><i style="background:#88ccff"></i>수구</span>
+  <span><i style="background:#ffcc44"></i>1쿠션</span>
+  <span><i style="background:#ff8888"></i>3쿠션</span>
+  <span><i style="background:#ff4444"></i>5½ 예측</span>
+  <span><i style="background:#0f0"></i>물리 예측</span>
+  <span><i style="background:rgba(0,180,255,.7)"></i>연장선</span>
+</div>
+
 <script>
 // ============================================================
-//  3C Simulator — 물리 엔진 + 파이브 앤 하프
+//  3C Simulator v3 — 고급 물리 엔진 + 파이브 앤 하프
+//
+//  물리 모델:
+//   - 입사각(θ) 기반 반사: 스핀 효과가 θ에 비례
+//   - 쿠션 마찰(μ): 스핀×정규력×μ = 접선 가속
+//   - 스핀 감쇠: 충돌 각도에 따라 가변적
+//   - 스쿼트(Squirt): 강한 English시 발사 방향 편향
+//   - 바닥 동마찰: 속도 비례 감속 + 스핀-유도 커브
+//   - 에너지 손실: 쿠션 반발계수
 // ============================================================
 
 const cv = document.getElementById('cv');
-const C = cv.getContext('2d');
+const X = cv.getContext('2d');
 
 // --- 테이블 ---
-const TW = 800, TH = 400, CU = 28, RL = 18, PD = 40;
-cv.width  = TW + (CU + RL) * 2 + PD * 2;
-cv.height = TH + (CU + RL) * 2 + PD * 2;
-const OX = PD + RL + CU, OY = PD + RL + CU;
-const TR = {x:OX+TW, y:OY}, TL = {x:OX, y:OY};
-const BR = {x:OX+TW, y:OY+TH}, BL = {x:OX, y:OY+TH};
-
-// --- 색상 ---
-const CC = {rail:'#5a3a1a',cush:'#2d8c3c',felt:'#1b7a30',line:'#1a6b28',
-  t1:'#ff4444',t2:'#ffaa00',t3:'#ff6666',ext:'rgba(0,180,255,.6)',aim:'rgba(255,255,80,.45)'};
-const BR_ = 10; // ball radius
+const TW=800,TH=400,CU=28,RL=18,PD=40;
+cv.width=TW+(CU+RL)*2+PD*2;
+cv.height=TH+(CU+RL)*2+PD*2;
+const OX=PD+RL+CU, OY=PD+RL+CU;
+const TR={x:OX+TW,y:OY},TL={x:OX,y:OY};
+const BR={x:OX+TW,y:OY+TH},BL={x:OX,y:OY+TH};
+const R=10; // 공 반지름
 
 // --- 물리 상수 ---
-const FRICTION = 0.0025;     // 바닥 마찰 (프레임당)
-const RESTITUTION = 0.88;    // 쿠션 반발계수
-const SPIN_EFFECT = 0.35;    // 쿠션 접촉 시 스핀 효과
-const SPIN_DECAY = 0.65;     // 쿠션 접촉 시 스핀 감소율
-const MIN_SPEED = 0.15;      // 정지 판정 속도
-
-// --- 회전/팁 ---
-let tip = 3;
-const STD_TIP = 3, TIP_ADJ = 2.5;
-
-// --- 게임 상태 ---
-const ST = {AIM:0, SIM:1};
-let state = ST.AIM;
-let ball = {x:BR.x-40, y:BR.y-80, vx:0, vy:0, spin:0};
-let ghost = {x:ball.x, y:ball.y}; // 시뮬 시작 위치 기억
-let trail = [];           // 궤적 잔상
-let bounceCount = 0;      // 쿠션 횟수
-let predTraj = null;      // 예측 궤적 저장
-let isDrag = false, aimLock = false;
-let mouse = {x:0, y:0};
-let curDir = 'left';
-let power = 7;
-
-// ============================================================
-//  포인트 시스템 (양방향)
-// ============================================================
-
-function bPts(a,b,v){
-  const p=[],n=v.length-1;
-  for(let i=0;i<=n;i++){const t=i/n;p.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,val:v[i]});}return p;
-}
-
-const SL = {
-  c1: bPts(TR,TL,[0,10,20,30,40,50]),
-  c3: bPts(BL,BR,[0,10,20,30,40,50]),
-  cs: bPts(BR,TR,[50,60,70,80,90]),
-  cl: bPts(BR,BL,[50,45,40,35,30,25,20,15,10]),
-  w2:'left', w2x:OX, ss:'right', lbl:'← 좌'
+const PHY = {
+  mu_felt:    0.0022,  // 바닥 동마찰 계수 (프레임당)
+  mu_cushion: 0.12,    // 쿠션 마찰 계수
+  restitution:0.88,    // 쿠션 반발 계수
+  spin_decay_base: 0.55, // 스핀 기본 감쇠 (충돌)
+  spin_decay_angle:0.30, // θ에 의한 추가 감쇠
+  spin_curve: 0.0003,  // 바닥 마찰에 의한 스핀→커브 효과
+  squirt_factor:0.007, // 스쿼트 편향 (rad / tip / power_unit)
+  min_speed:  0.12,    // 정지 판정
 };
-const SR = {
-  c1: bPts(TL,TR,[0,10,20,30,40,50]),
-  c3: bPts(BR,BL,[0,10,20,30,40,50]),
-  cs: bPts(BL,TL,[50,60,70,80,90]),
-  cl: bPts(BL,BR,[50,45,40,35,30,25,20,15,10]),
-  w2:'right', w2x:OX+TW, ss:'left', lbl:'우 →'
+
+// --- 시스템 / UI ---
+let tip=3, power=7, sqtOn=false, showPhysPred=true;
+const STD_TIP=3, TIP_ADJ=2.5;
+
+// --- 상태 ---
+const S={AIM:0,SIM:1};
+let st=S.AIM;
+let ball={x:BR.x-40,y:BR.y-80,vx:0,vy:0,spin:0};
+let ghost={x:ball.x,y:ball.y};
+let trail=[], bounces=0, predTraj=null, physPredPath=null;
+let isDrag=false,aimLk=false,mouse={x:0,y:0},curDir='left';
+
+// ============================================================
+//  포인트 시스템 (양방향 대칭)
+// ============================================================
+
+function bP(a,b,v){const p=[],n=v.length-1;for(let i=0;i<=n;i++){const t=i/n;p.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,val:v[i]});}return p;}
+
+const SL={
+  c1:bP(TR,TL,[0,10,20,30,40,50]),
+  c3:bP(BL,BR,[0,10,20,30,40,50]),
+  cs:bP(BR,TR,[50,60,70,80,90]),
+  cl:bP(BR,BL,[50,45,40,35,30,25,20,15,10]),
+  w2:'left',w2x:OX,ss:'right',lbl:'← 좌'
 };
-function mkPoly(s){return[...s.cl.slice().reverse(),...s.cs.slice(1)];}
-SL.cp=mkPoly(SL); SR.cp=mkPoly(SR);
+const SR={
+  c1:bP(TL,TR,[0,10,20,30,40,50]),
+  c3:bP(BR,BL,[0,10,20,30,40,50]),
+  cs:bP(BL,TL,[50,60,70,80,90]),
+  cl:bP(BL,BR,[50,45,40,35,30,25,20,15,10]),
+  w2:'right',w2x:OX+TW,ss:'left',lbl:'우 →'
+};
+function mkP(s){return[...s.cl.slice().reverse(),...s.cs.slice(1)];}
+SL.cp=mkP(SL);SR.cp=mkP(SR);
 
 // ============================================================
-//  그리기: 테이블
-// ============================================================
-
-function drawTable(){
-  C.fillStyle=CC.rail;
-  rr(C,PD,PD,TW+(CU+RL)*2,TH+(CU+RL)*2,10);C.fill();
-  C.fillStyle=CC.cush;
-  C.fillRect(PD+RL,PD+RL,TW+CU*2,TH+CU*2);
-  C.fillStyle=CC.felt;
-  C.fillRect(OX,OY,TW,TH);
-  C.strokeStyle=CC.line;C.lineWidth=.5;
-  C.beginPath();C.moveTo(OX+TW/2,OY);C.lineTo(OX+TW/2,OY+TH);C.stroke();
-  // 다이아몬드
-  C.fillStyle='#f0e6c0';
-  for(let i=1;i<8;i++){const x=OX+(TW/8)*i;dm(x,PD+RL/2);dm(x,OY+TH+CU+RL/2);}
-  for(let i=1;i<4;i++){const y=OY+(TH/4)*i;dm(PD+RL/2,y);dm(OX+TW+CU+RL/2,y);}
-}
-
-function dm(x,y){const s=3;C.beginPath();C.moveTo(x,y-s);C.lineTo(x+s,y);C.lineTo(x,y+s);C.lineTo(x-s,y);C.closePath();C.fill();}
-
-// ============================================================
-//  그리기: 포인트 라벨
-// ============================================================
-
-function dPts(pts,col,side,a){
-  C.font='bold 10px sans-serif';C.textAlign='center';C.textBaseline='middle';
-  C.globalAlpha=a||1;
-  for(const p of pts){
-    C.beginPath();C.arc(p.x,p.y,3,0,Math.PI*2);C.fillStyle=col;C.fill();
-    let lx=p.x,ly=p.y;
-    if(side==='a')ly-=14;if(side==='b')ly+=14;if(side==='b2')ly+=28;
-    if(side==='l')lx-=16;if(side==='r')lx+=16;
-    C.fillStyle='rgba(255,255,255,.75)';C.fillText(p.val,lx,ly);
-  }
-  C.globalAlpha=1;
-}
-
-function drawPts(s,a){
-  dPts(s.c1,'#ffcc44','a',a);
-  dPts(s.c3,'#ff8888','b',a);
-  dPts(s.cs,'#88ccff',s.ss==='right'?'r':'l',a);
-  dPts(s.cl.slice(1),'#88ccff','b2',a);
-}
-
-// ============================================================
-//  그리기: 공 + 당점 가이드
-// ============================================================
-
-function drawBall(x,y,showTip){
-  // 그림자
-  C.beginPath();C.arc(x+2,y+2,BR_,0,Math.PI*2);
-  C.fillStyle='rgba(0,0,0,.3)';C.fill();
-  // 공
-  const g=C.createRadialGradient(x-3,y-3,1,x,y,BR_);
-  g.addColorStop(0,'#fff');g.addColorStop(1,'#ccc');
-  C.beginPath();C.arc(x,y,BR_,0,Math.PI*2);
-  C.fillStyle=g;C.fill();C.strokeStyle='#999';C.lineWidth=.5;C.stroke();
-
-  if(!showTip) return;
-
-  // 당점 가이드 (공 옆 작은 원)
-  const gx = x + 28, gy = y;
-  const gr = 14;
-  // 배경 원
-  C.beginPath();C.arc(gx,gy,gr,0,Math.PI*2);
-  C.fillStyle='rgba(255,255,255,.12)';C.fill();
-  C.strokeStyle='rgba(255,255,255,.3)';C.lineWidth=1;C.stroke();
-  // 십자선
-  C.strokeStyle='rgba(255,255,255,.15)';C.lineWidth=.5;
-  C.beginPath();C.moveTo(gx-gr,gy);C.lineTo(gx+gr,gy);C.stroke();
-  C.beginPath();C.moveTo(gx,gy-gr);C.lineTo(gx,gy+gr);C.stroke();
-  // 팁 위치 (좌우)
-  const tipX = gx + (tip / 4) * (gr - 3);
-  const tipY = gy;
-  C.beginPath();C.arc(tipX,tipY,3.5,0,Math.PI*2);
-  C.fillStyle = tip > 0 ? '#d4a017' : tip < 0 ? '#c0392b' : '#888';
-  C.fill();C.strokeStyle='#fff';C.lineWidth=.8;C.stroke();
-}
-
-// ============================================================
-//  계산: 투영 / 레이캐스트
+//  투영 / 레이캐스트
 // ============================================================
 
 function proj(px,py,pts){
-  let best=1e9,val=0;
+  let b=1e9,v=0;
   for(let i=0;i<pts.length-1;i++){
     const ax=pts[i].x,ay=pts[i].y,bx=pts[i+1].x,by=pts[i+1].y;
     const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
     let t=l2===0?0:((px-ax)*dx+(py-ay)*dy)/l2;
     t=Math.max(0,Math.min(1,t));
     const d=Math.hypot(px-(ax+t*dx),py-(ay+t*dy));
-    if(d<best){best=d;val=pts[i].val+t*(pts[i+1].val-pts[i].val);}
-  }
-  return val;
+    if(d<b){b=d;v=pts[i].val+t*(pts[i+1].val-pts[i].val);}
+  }return v;
 }
 
-function rayHit(sx,sy,dx,dy,ex){
+function rayH(sx,sy,dx,dy,ex){
   let bt=1e9,h=null;
-  const ts=[
-    {n:'top',ok:dy<0,t:(OY-sy)/dy},
-    {n:'bottom',ok:dy>0,t:(OY+TH-sy)/dy},
-    {n:'left',ok:dx<0,t:(OX-sx)/dx},
-    {n:'right',ok:dx>0,t:(OX+TW-sx)/dx}
-  ];
+  const ts=[{n:'top',ok:dy<0,t:(OY-sy)/dy},{n:'bottom',ok:dy>0,t:(OY+TH-sy)/dy},
+    {n:'left',ok:dx<0,t:(OX-sx)/dx},{n:'right',ok:dx>0,t:(OX+TW-sx)/dx}];
   for(const e of ts){
     if(!e.ok||e.n===ex||e.t<.001||e.t>=bt)continue;
     const hx=sx+dx*e.t,hy=sy+dy*e.t;
-    if((e.n==='top'||e.n==='bottom')&&hx>=OX-.5&&hx<=OX+TW+.5){
-      bt=e.t;h={x:hx,y:e.n==='top'?OY:OY+TH,edge:e.n};
-    }
-    if((e.n==='left'||e.n==='right')&&hy>=OY-.5&&hy<=OY+TH+.5){
-      bt=e.t;h={x:e.n==='left'?OX:OX+TW,y:hy,edge:e.n};
-    }
-  }
-  return h;
+    if((e.n==='top'||e.n==='bottom')&&hx>=OX-.5&&hx<=OX+TW+.5){bt=e.t;h={x:hx,y:e.n==='top'?OY:OY+TH,edge:e.n};}
+    if((e.n==='left'||e.n==='right')&&hy>=OY-.5&&hy<=OY+TH+.5){bt=e.t;h={x:e.n==='left'?OX:OX+TW,y:hy,edge:e.n};}
+  }return h;
 }
 
 // ============================================================
-//  계산: 파이브 앤 하프 시스템
+//  파이브 앤 하프 시스템 계산
 // ============================================================
 
-function detectDir(c1){
-  if(!c1||c1.edge!=='top')return curDir;
-  return c1.x<ball.x?'left':'right';
-}
+function detectDir(c1){if(!c1||c1.edge!=='top')return curDir;return c1.x<ball.x?'left':'right';}
 
-function calcC1Hit(bx,by,mx,my){
+function calcC1(bx,by,mx,my){
   const dx=mx-bx,dy=my-by;
   if(Math.abs(dx)<.5&&Math.abs(dy)<.5)return null;
-  return rayHit(bx,by,dx,dy,null);
+  return rayH(bx,by,dx,dy,null);
 }
-
-function calcC1Val(h,s){return(!h||h.edge!=='top')?null:proj(h.x,h.y,s.c1);}
 
 function calcExt(bx,by,c1x,c1y,s){
   const dx=bx-c1x,dy=by-c1y;
   const wX=s.ss==='right'?OX+TW:OX;
-  const needD=s.ss==='right'?(dx>.001):(dx<-.001);
+  const nd=s.ss==='right'?(dx>.001):(dx<-.001);
   let hS=null,hB=null;
-  if(needD){const t=(wX-bx)/dx;if(t>-.001){const hy=by+dy*t;if(hy>=OY&&hy<=OY+TH)hS={x:wX,y:hy,t:Math.abs(t)};}}
+  if(nd){const t=(wX-bx)/dx;if(t>-.001){const hy=by+dy*t;if(hy>=OY&&hy<=OY+TH)hS={x:wX,y:hy,t:Math.abs(t)};}}
   if(dy>.001){const t=(OY+TH-by)/dy;if(t>-.001){const hx=bx+dx*t;if(hx>=OX&&hx<=OX+TW)hB={x:hx,y:OY+TH,t:Math.abs(t)};}}
-  let e=null;
-  if(hS&&hB)e=hS.t<=hB.t?hS:hB;else e=hS||hB;
+  let e=null;if(hS&&hB)e=hS.t<=hB.t?hS:hB;else e=hS||hB;
   if(!e)return{val:null,hit:null};
   return{val:proj(e.x,e.y,s.cp),hit:e};
 }
 
-function c3Pos(v,s){
+function c3P(v,s){
   v=Math.max(0,Math.min(50,v));const pts=s.c3;
   for(let i=0;i<pts.length-1;i++){
-    if(v>=pts[i].val&&v<=pts[i+1].val){
-      const t=(v-pts[i].val)/(pts[i+1].val-pts[i].val);
-      return{x:pts[i].x+(pts[i+1].x-pts[i].x)*t,y:pts[i].y+(pts[i+1].y-pts[i].y)*t};
-    }
-  }
-  return{x:pts[pts.length-1].x,y:pts[pts.length-1].y};
+    if(v>=pts[i].val&&v<=pts[i+1].val){const t=(v-pts[i].val)/(pts[i+1].val-pts[i].val);
+      return{x:pts[i].x+(pts[i+1].x-pts[i].x)*t,y:pts[i].y+(pts[i+1].y-pts[i].y)*t};}
+  }return{x:pts[pts.length-1].x,y:pts[pts.length-1].y};
 }
+
+function calcC1Val(h,s){return(!h||h.edge!=='top')?null:proj(h.x,h.y,s.c1);}
 
 function calcTraj(cv_,c1h,c1v,s){
   if(c1v===null||cv_===null)return null;
   const adj=(tip-STD_TIP)*TIP_ADJ;
   const c3v=(cv_-c1v)+adj;
   if(c3v<0||c3v>50)return{c1:c1h,c2:null,c3:null,c3v,oor:true};
-  const c3p=c3Pos(c3v,s);
+  const c3p=c3P(c3v,s);
   const ref={x:2*s.w2x-c3p.x,y:c3p.y};
   const rdx=ref.x-c1h.x,rdy=ref.y-c1h.y;
   let c2=null;
   if(Math.abs(rdx)>.001){const t=(s.w2x-c1h.x)/rdx;if(t>.001){const hy=c1h.y+rdy*t;if(hy>=OY&&hy<=OY+TH)c2={x:s.w2x,y:hy,edge:s.w2};}}
-  if(!c2)c2=rayHit(c1h.x,c1h.y,c3p.x-c1h.x,c3p.y-c1h.y,'top');
+  if(!c2)c2=rayH(c1h.x,c1h.y,c3p.x-c1h.x,c3p.y-c1h.y,'top');
   return{c1:c1h,c2,c3:c3p,c3v,oor:false};
 }
 
 // ============================================================
-//  물리 시뮬레이션
+//  물리 엔진 (고급)
 // ============================================================
 
-function physStep(){
-  // 마찰
-  const spd = Math.hypot(ball.vx, ball.vy);
-  if(spd < MIN_SPEED){ stopSim(); return; }
+/**
+ * 쿠션 충돌 처리 — 입사각 기반 반사
+ *
+ * vn: 법선 속도 (쿠션 수직), vt: 접선 속도 (쿠션 평행)
+ * θ = atan2(|vn|, |vt|) — 입사각
+ * 접선 가속 = μ_cushion × ω × |vn|
+ * 스핀 감쇠 = base + angle_factor × cos(θ)
+ */
+function cushionBounce(b, edge){
+  const horiz = (edge==='top'||edge==='bottom');
+  let vn = horiz ? b.vy : b.vx;   // 법선 성분
+  let vt = horiz ? b.vx : b.vy;   // 접선 성분
 
-  const fric = 1 - FRICTION;
-  ball.vx *= fric;
-  ball.vy *= fric;
+  // 입사각
+  const theta = Math.atan2(Math.abs(vn), Math.abs(vt) + 0.01);
 
-  // 이동
-  ball.x += ball.vx;
-  ball.y += ball.vy;
+  // 법선 반사 + 에너지 손실
+  vn = -vn * PHY.restitution;
 
-  // 궤적 기록
-  trail.push({x:ball.x, y:ball.y, a:1});
+  // 스핀에 의한 접선 가속: F = μ × ω × |impact_force|
+  // impact_force ∝ |vn_before| (충돌 전 법선 속도)
+  const impactForce = Math.abs(vn) / PHY.restitution; // 충돌 전 속도 복원
+  const spinForce = PHY.mu_cushion * b.spin * impactForce;
 
-  // 쿠션 충돌
-  // 상단
-  if(ball.y - BR_ <= OY){
-    ball.y = OY + BR_;
-    ball.vy = -ball.vy * RESTITUTION;
-    ball.vx += ball.spin * SPIN_EFFECT;
-    ball.spin *= SPIN_DECAY;
-    bounceCount++;
-  }
-  // 하단
-  if(ball.y + BR_ >= OY + TH){
-    ball.y = OY + TH - BR_;
-    ball.vy = -ball.vy * RESTITUTION;
-    ball.vx -= ball.spin * SPIN_EFFECT;
-    ball.spin *= SPIN_DECAY;
-    bounceCount++;
-  }
-  // 좌측
-  if(ball.x - BR_ <= OX){
-    ball.x = OX + BR_;
-    ball.vx = -ball.vx * RESTITUTION;
-    ball.vy -= ball.spin * SPIN_EFFECT;
-    ball.spin *= SPIN_DECAY;
-    bounceCount++;
-  }
-  // 우측
-  if(ball.x + BR_ >= OX + TW){
-    ball.x = OX + TW - BR_;
-    ball.vx = -ball.vx * RESTITUTION;
-    ball.vy += ball.spin * SPIN_EFFECT;
-    ball.spin *= SPIN_DECAY;
-    bounceCount++;
-  }
+  // 방향별 부호: 스핀의 접선 효과
+  //  top: +spin → +vt (우측으로), bottom: +spin → -vt
+  //  left: +spin → -vt (위쪽으로), right: +spin → +vt
+  const sign = (edge==='top'||edge==='right') ? 1 : -1;
+  vt += spinForce * sign;
 
-  // 안전: 최대 20쿠션 후 정지
-  if(bounceCount >= 20) stopSim();
+  // 스핀 감쇠: 충돌각이 가파를수록(θ↑) 감쇠 적음
+  const decay = PHY.spin_decay_base + PHY.spin_decay_angle * Math.cos(theta);
+  b.spin *= (1 - decay);
+
+  // 기록
+  if(horiz){ b.vy=vn; b.vx=vt; }
+  else { b.vx=vn; b.vy=vt; }
 }
 
-function startSim(){
-  const c1h = calcC1Hit(ball.x,ball.y,mouse.x,mouse.y);
-  if(!c1h || c1h.edge !== 'top') return;
+/** 물리 스텝 (1 프레임) */
+function physStep(b){
+  const spd = Math.hypot(b.vx,b.vy);
+  if(spd < PHY.min_speed) return false;
 
-  // 방향 및 시스템
-  const dir = detectDir(c1h);
-  curDir = dir;
-  const sys = dir==='left'?SL:SR;
+  // 바닥 동마찰 (속도에 비례하는 감속)
+  const f = 1 - PHY.mu_felt;
+  b.vx *= f;
+  b.vy *= f;
 
-  // 예측 궤적 저장
-  const c1v = calcC1Val(c1h,sys);
-  const ext = calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
-  if(c1v!==null && ext.val!==null){
-    predTraj = calcTraj(ext.val,c1h,c1v,sys);
+  // 스핀에 의한 커브 (바닥 마찰이 스핀을 수평력으로 변환)
+  // 커브 방향: 스핀 양수 → 우측으로 미세 이동
+  b.vx += b.spin * PHY.spin_curve * spd;
+
+  // 이동
+  b.x += b.vx;
+  b.y += b.vy;
+
+  // 쿠션 충돌 검사
+  let bounced = false;
+  if(b.y - R <= OY)     { b.y = OY + R;      cushionBounce(b,'top');    bounced=true; }
+  if(b.y + R >= OY + TH){ b.y = OY + TH - R;  cushionBounce(b,'bottom'); bounced=true; }
+  if(b.x - R <= OX)     { b.x = OX + R;      cushionBounce(b,'left');   bounced=true; }
+  if(b.x + R >= OX + TW){ b.x = OX + TW - R;  cushionBounce(b,'right');  bounced=true; }
+
+  return bounced;
+}
+
+/** 물리 기반 예측 경로 생성 (고스트 시뮬레이션) */
+function calcPhysPred(startX,startY,vx,vy,spin){
+  const g = {x:startX,y:startY,vx,vy,spin};
+  const path = [{x:g.x,y:g.y}];
+  let bc = 0;
+  for(let i=0;i<3000;i++){
+    const spd=Math.hypot(g.vx,g.vy);
+    if(spd<PHY.min_speed)break;
+    const f=1-PHY.mu_felt;g.vx*=f;g.vy*=f;
+    g.vx+=g.spin*PHY.spin_curve*spd;
+    g.x+=g.vx;g.y+=g.vy;
+    let bounced=false;
+    if(g.y-R<=OY){g.y=OY+R;cushionBounce(g,'top');bounced=true;}
+    if(g.y+R>=OY+TH){g.y=OY+TH-R;cushionBounce(g,'bottom');bounced=true;}
+    if(g.x-R<=OX){g.x=OX+R;cushionBounce(g,'left');bounced=true;}
+    if(g.x+R>=OX+TW){g.x=OX+TW-R;cushionBounce(g,'right');bounced=true;}
+    if(bounced){bc++;path.push({x:g.x,y:g.y});}
+    if(bc>=4)break;
   }
+  path.push({x:g.x,y:g.y});
+  return path;
+}
+
+// ============================================================
+//  발사 / 정지 / 리셋
+// ============================================================
+
+function startSim(){
+  const c1h=calcC1(ball.x,ball.y,mouse.x,mouse.y);
+  if(!c1h||c1h.edge!=='top')return;
+
+  const dir=detectDir(c1h);curDir=dir;
+  const sys=dir==='left'?SL:SR;
+
+  // 5&half 예측 저장
+  const c1v=calcC1Val(c1h,sys);
+  const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
+  if(c1v!==null&&ext.val!==null) predTraj=calcTraj(ext.val,c1h,c1v,sys);
 
   // 발사 벡터
-  const dx = c1h.x - ball.x, dy = c1h.y - ball.y;
-  const len = Math.hypot(dx,dy);
-  ball.vx = (dx/len) * power;
-  ball.vy = (dy/len) * power;
+  let dx=c1h.x-ball.x, dy=c1h.y-ball.y;
+  const len=Math.hypot(dx,dy);
+  let ndx=dx/len, ndy=dy/len;
 
-  // 스핀: 팁값 × 방향 보정
-  const spinSign = dir === 'left' ? -1 : 1;
-  ball.spin = tip * spinSign;
+  // 스쿼트: 강한 English일 때 조준선 미세 편향
+  if(sqtOn && tip!==0){
+    const sq = -tip * PHY.squirt_factor * (power/7);
+    const cos=Math.cos(sq),sin=Math.sin(sq);
+    const nx=ndx*cos-ndy*sin, ny=ndx*sin+ndy*cos;
+    ndx=nx;ndy=ny;
+  }
 
-  ghost = {x:ball.x, y:ball.y};
-  trail = [];
-  bounceCount = 0;
-  state = ST.SIM;
-  aimLock = false;
+  ball.vx=ndx*power; ball.vy=ndy*power;
 
-  document.getElementById('shoot-btn').textContent = '정지 [Space]';
-  document.getElementById('shoot-btn').classList.add('active');
+  // 스핀: 팁 × 방향부호
+  const ss=dir==='left'?-1:1;
+  ball.spin=tip*ss;
+
+  ghost={x:ball.x,y:ball.y};
+  trail=[];bounces=0;st=S.SIM;aimLk=false;
+
+  document.getElementById('shoot').textContent='정지 [Space]';
+  document.getElementById('shoot').classList.add('act');
 }
 
 function stopSim(){
-  state = ST.AIM;
-  ball.vx = 0; ball.vy = 0; ball.spin = 0;
-  document.getElementById('shoot-btn').textContent = '발사 [Space]';
-  document.getElementById('shoot-btn').classList.remove('active');
+  st=S.AIM;ball.vx=0;ball.vy=0;ball.spin=0;
+  document.getElementById('shoot').textContent='발사 [Space]';
+  document.getElementById('shoot').classList.remove('act');
 }
 
 function resetBall(){
-  stopSim();
-  ball.x = BR.x - 40; ball.y = BR.y - 80;
-  trail = []; predTraj = null; bounceCount = 0;
+  stopSim();ball.x=BR.x-40;ball.y=BR.y-80;
+  trail=[];predTraj=null;physPredPath=null;bounces=0;
 }
 
 // ============================================================
-//  그리기: 궤적/연장선/트레일
+//  그리기
 // ============================================================
+
+function drawTable(){
+  X.fillStyle='#5a3a1a';
+  rr(X,PD,PD,TW+(CU+RL)*2,TH+(CU+RL)*2,10);X.fill();
+  X.fillStyle='#2d8c3c';
+  X.fillRect(PD+RL,PD+RL,TW+CU*2,TH+CU*2);
+  X.fillStyle='#1b7a30';
+  X.fillRect(OX,OY,TW,TH);
+  X.strokeStyle='#1a6b28';X.lineWidth=.5;
+  X.beginPath();X.moveTo(OX+TW/2,OY);X.lineTo(OX+TW/2,OY+TH);X.stroke();
+  X.fillStyle='#f0e6c0';
+  for(let i=1;i<8;i++){const x=OX+(TW/8)*i;dm(x,PD+RL/2);dm(x,OY+TH+CU+RL/2);}
+  for(let i=1;i<4;i++){const y=OY+(TH/4)*i;dm(PD+RL/2,y);dm(OX+TW+CU+RL/2,y);}
+}
+function dm(x,y){const s=3;X.beginPath();X.moveTo(x,y-s);X.lineTo(x+s,y);X.lineTo(x,y+s);X.lineTo(x-s,y);X.closePath();X.fill();}
+
+function dPts(pts,col,side,a){
+  X.font='bold 10px sans-serif';X.textAlign='center';X.textBaseline='middle';X.globalAlpha=a||1;
+  for(const p of pts){
+    X.beginPath();X.arc(p.x,p.y,3,0,Math.PI*2);X.fillStyle=col;X.fill();
+    let lx=p.x,ly=p.y;
+    if(side==='a')ly-=14;if(side==='b')ly+=14;if(side==='b2')ly+=28;
+    if(side==='l')lx-=16;if(side==='r')lx+=16;
+    X.fillStyle='rgba(255,255,255,.75)';X.fillText(p.val,lx,ly);
+  }X.globalAlpha=1;
+}
+function drawPts(s,a){
+  dPts(s.c1,'#ffcc44','a',a);dPts(s.c3,'#ff8888','b',a);
+  dPts(s.cs,'#88ccff',s.ss==='right'?'r':'l',a);
+  dPts(s.cl.slice(1),'#88ccff','b2',a);
+}
+
+function drawBall(x,y,showTip){
+  X.beginPath();X.arc(x+2,y+2,R,0,Math.PI*2);X.fillStyle='rgba(0,0,0,.3)';X.fill();
+  const g=X.createRadialGradient(x-3,y-3,1,x,y,R);
+  g.addColorStop(0,'#fff');g.addColorStop(1,'#ccc');
+  X.beginPath();X.arc(x,y,R,0,Math.PI*2);X.fillStyle=g;X.fill();
+  X.strokeStyle='#999';X.lineWidth=.5;X.stroke();
+  if(!showTip)return;
+  // 당점 가이드
+  const gx=x+28,gy=y,gr=14;
+  X.beginPath();X.arc(gx,gy,gr,0,Math.PI*2);X.fillStyle='rgba(255,255,255,.1)';X.fill();
+  X.strokeStyle='rgba(255,255,255,.25)';X.lineWidth=1;X.stroke();
+  X.strokeStyle='rgba(255,255,255,.12)';X.lineWidth=.5;
+  X.beginPath();X.moveTo(gx-gr,gy);X.lineTo(gx+gr,gy);X.stroke();
+  X.beginPath();X.moveTo(gx,gy-gr);X.lineTo(gx,gy+gr);X.stroke();
+  const tx=gx+(tip/4)*(gr-3),ty=gy;
+  X.beginPath();X.arc(tx,ty,3.5,0,Math.PI*2);
+  X.fillStyle=tip>0?'#d4a017':tip<0?'#c0392b':'#888';
+  X.fill();X.strokeStyle='#fff';X.lineWidth=.8;X.stroke();
+  // 라벨
+  X.font='bold 8px sans-serif';X.textAlign='center';
+  X.fillStyle=tip>0?'#d4a017':tip<0?'#c0392b':'#aaa';
+  X.fillText(tip>0?'정회전':tip<0?'역회전':'무회전',gx,gy+gr+10);
+}
 
 function drawExt(h){
   if(!h)return;
-  C.beginPath();C.moveTo(ball.x,ball.y);C.lineTo(h.x,h.y);
-  C.strokeStyle=CC.ext;C.lineWidth=1.5;C.setLineDash([4,4]);C.stroke();C.setLineDash([]);
-  C.beginPath();C.arc(h.x,h.y,5,0,Math.PI*2);
-  C.fillStyle='rgba(0,180,255,.5)';C.fill();C.strokeStyle='#0af';C.lineWidth=1;C.stroke();
+  X.beginPath();X.moveTo(ball.x,ball.y);X.lineTo(h.x,h.y);
+  X.strokeStyle='rgba(0,180,255,.6)';X.lineWidth=1.5;X.setLineDash([4,4]);X.stroke();X.setLineDash([]);
+  X.beginPath();X.arc(h.x,h.y,5,0,Math.PI*2);X.fillStyle='rgba(0,180,255,.5)';X.fill();
+  X.strokeStyle='#0af';X.lineWidth=1;X.stroke();
 }
 
 function drawAim(h){
   if(!h)return;
-  C.beginPath();C.moveTo(ball.x,ball.y);C.lineTo(h.x,h.y);
-  C.strokeStyle=CC.aim;C.lineWidth=1.5;C.setLineDash([6,4]);C.stroke();C.setLineDash([]);
+  X.beginPath();X.moveTo(ball.x,ball.y);X.lineTo(h.x,h.y);
+  X.strokeStyle='rgba(255,255,80,.45)';X.lineWidth=1.5;X.setLineDash([6,4]);X.stroke();X.setLineDash([]);
 }
 
 function drawTraj(t,alpha){
-  if(!t)return;
-  C.globalAlpha=alpha||1;
-  // 수구 → 1쿠션
-  const sx = alpha<1?ghost.x:ball.x, sy = alpha<1?ghost.y:ball.y;
-  C.beginPath();C.moveTo(sx,sy);C.lineTo(t.c1.x,t.c1.y);
-  C.strokeStyle=CC.t1;C.lineWidth=2.5;C.stroke();
-  mk(t.c1.x,t.c1.y,CC.t1);
-  if(t.oor||!t.c2||!t.c3){C.globalAlpha=1;return;}
-  // 1쿠션 → 2쿠션
-  C.beginPath();C.moveTo(t.c1.x,t.c1.y);C.lineTo(t.c2.x,t.c2.y);
-  C.strokeStyle=CC.t2;C.lineWidth=2;C.stroke();
-  mk(t.c2.x,t.c2.y,CC.t2);
-  // 2쿠션 → 3쿠션
-  C.beginPath();C.moveTo(t.c2.x,t.c2.y);C.lineTo(t.c3.x,t.c3.y);
-  C.strokeStyle=CC.t3;C.lineWidth=2;C.setLineDash([5,3]);C.stroke();C.setLineDash([]);
-  mk(t.c3.x,t.c3.y,CC.t3);
-  C.globalAlpha=1;
+  if(!t)return;X.globalAlpha=alpha||1;
+  const sx=alpha<1?ghost.x:ball.x,sy=alpha<1?ghost.y:ball.y;
+  X.beginPath();X.moveTo(sx,sy);X.lineTo(t.c1.x,t.c1.y);
+  X.strokeStyle='#ff4444';X.lineWidth=2.5;X.stroke();mk(t.c1.x,t.c1.y,'#ff4444');
+  if(t.oor||!t.c2||!t.c3){X.globalAlpha=1;return;}
+  X.beginPath();X.moveTo(t.c1.x,t.c1.y);X.lineTo(t.c2.x,t.c2.y);
+  X.strokeStyle='#ffaa00';X.lineWidth=2;X.stroke();mk(t.c2.x,t.c2.y,'#ffaa00');
+  X.beginPath();X.moveTo(t.c2.x,t.c2.y);X.lineTo(t.c3.x,t.c3.y);
+  X.strokeStyle='#ff6666';X.lineWidth=2;X.setLineDash([5,3]);X.stroke();X.setLineDash([]);
+  mk(t.c3.x,t.c3.y,'#ff6666');X.globalAlpha=1;
 }
 
-function mk(x,y,col){
-  C.beginPath();C.arc(x,y,5,0,Math.PI*2);
-  C.fillStyle=col;C.globalAlpha=Math.min(C.globalAlpha,.6);C.fill();
-  C.globalAlpha=1;C.strokeStyle='#fff';C.lineWidth=1;C.stroke();
+/** 물리 예측 경로 (녹색 점선) */
+function drawPhysPred(path){
+  if(!path||path.length<2)return;
+  X.beginPath();X.moveTo(path[0].x,path[0].y);
+  for(let i=1;i<path.length;i++)X.lineTo(path[i].x,path[i].y);
+  X.strokeStyle='rgba(0,255,100,.45)';X.lineWidth=2;X.setLineDash([3,5]);X.stroke();X.setLineDash([]);
+  // 끝점 마커
+  const e=path[path.length-1];
+  X.beginPath();X.arc(e.x,e.y,4,0,Math.PI*2);
+  X.fillStyle='rgba(0,255,100,.5)';X.fill();X.strokeStyle='#0f0';X.lineWidth=1;X.stroke();
+}
+
+function mk(x,y,c){
+  X.beginPath();X.arc(x,y,5,0,Math.PI*2);X.fillStyle=c;
+  const a=X.globalAlpha;X.globalAlpha=Math.min(a,.6);X.fill();
+  X.globalAlpha=a;X.strokeStyle='#fff';X.lineWidth=1;X.stroke();
 }
 
 function drawTrail(){
   for(let i=0;i<trail.length;i++){
-    const t=trail[i];
-    t.a *= 0.995; // 페이드
-    if(t.a < 0.02) continue;
-    C.beginPath();C.arc(t.x,t.y,2,0,Math.PI*2);
-    C.fillStyle=`rgba(255,200,50,${t.a * 0.5})`;C.fill();
+    const t=trail[i];t.a*=0.994;if(t.a<.02)continue;
+    X.beginPath();X.arc(t.x,t.y,2,0,Math.PI*2);
+    X.fillStyle=`rgba(255,200,50,${t.a*.5})`;X.fill();
   }
-  // 오래된 잔상 정리
-  if(trail.length > 2000) trail = trail.filter(t => t.a >= 0.02);
+  if(trail.length>2000)trail=trail.filter(t=>t.a>=.02);
 }
 
 // ============================================================
-//  UI 업데이트
+//  UI
 // ============================================================
 
 function updateInfo(cv_,c1v,c3v,oor,dir){
-  document.getElementById('vc').textContent = cv_!==null?cv_.toFixed(1):'-';
-  document.getElementById('v1').textContent = c1v!==null?c1v.toFixed(1):'-';
-  const s3 = c3v!==null?c3v.toFixed(1):'-';
-  document.getElementById('v3').textContent = s3+(oor?' (범위초과)':'');
+  document.getElementById('vc').textContent=cv_!==null?cv_.toFixed(1):'-';
+  document.getElementById('v1').textContent=c1v!==null?c1v.toFixed(1):'-';
+  const s3=c3v!==null?c3v.toFixed(1):'-';
+  document.getElementById('v3').textContent=s3+(oor?' !':'');
   if(cv_!==null&&c1v!==null&&c3v!==null){
-    const ts = tip!==STD_TIP?` [팁${tip>0?'+':''}${tip}]`:'';
+    const ts=tip!==STD_TIP?` [${tip>0?'+':''}${tip}팁]`:'';
     document.getElementById('vf').textContent=`${cv_.toFixed(1)} − ${c1v.toFixed(1)} = ${s3}${ts}`;
-  }else{
-    document.getElementById('vf').textContent='수구 − 1쿠션 = 3쿠션';
-  }
+  }else document.getElementById('vf').textContent='수구 − 1쿠션 = 3쿠션';
   const d=document.getElementById('dir');
   d.textContent=dir==='left'?'← 좌':'우 →';
   d.style.background=dir==='left'?'rgba(100,150,255,.2)':'rgba(255,150,100,.2)';
   d.style.color=dir==='left'?'#8cf':'#fc8';
 }
-
 function resetInfo(m){
-  document.getElementById('vc').textContent='-';
-  document.getElementById('v1').textContent='-';
-  document.getElementById('v3').textContent='-';
-  document.getElementById('vf').textContent=m||'수구 − 1쿠션 = 3쿠션';
+  document.getElementById('vc').textContent='-';document.getElementById('v1').textContent='-';
+  document.getElementById('v3').textContent='-';document.getElementById('vf').textContent=m||'수구 − 1쿠션 = 3쿠션';
+}
+
+function updateTip(){
+  document.querySelectorAll('.tb').forEach(b=>{const v=+b.dataset.t;b.classList.remove('on','on-n','on-z');
+    if(v===tip)b.classList.add(v>0?'on':v<0?'on-n':'on-z');});
+  let l='';if(tip>0)l=`+${tip} 정회전`;else if(tip<0)l=`${tip} 역회전`;else l='0 무회전';
+  if(tip===STD_TIP)l+=' (기본)';document.getElementById('tl').textContent=l;
 }
 
 function updateStats(){
-  const spd = Math.hypot(ball.vx,ball.vy).toFixed(1);
-  const sp = ball.spin.toFixed(1);
-  document.getElementById('stats').textContent =
-    state===ST.SIM ? `속도:${spd} 스핀:${sp} 쿠션:${bounceCount}` :
-    bounceCount > 0 ? `완료! 쿠션:${bounceCount}회` : '';
+  const spd=Math.hypot(ball.vx,ball.vy).toFixed(1);
+  document.getElementById('stats').textContent=
+    st===S.SIM?`v:${spd} ω:${ball.spin.toFixed(1)} 쿠션:${bounces}`:
+    bounces>0?`완료 쿠션:${bounces}회`:'';
 }
-
-// ============================================================
-//  팁 UI
-// ============================================================
-
-function updateTip(){
-  document.querySelectorAll('.tb').forEach(b=>{
-    const v=+b.dataset.t;
-    b.classList.remove('on','on-neg','on-zero');
-    if(v===tip){b.classList.add(v>0?'on':v<0?'on-neg':'on-zero');}
-  });
-  let l='';
-  if(tip>0)l=`+${tip} 정회전`;else if(tip<0)l=`${tip} 역회전`;else l='0 무회전';
-  if(tip===STD_TIP)l+=' (기본)';
-  document.getElementById('tl').textContent=l;
-}
-
-document.querySelectorAll('.tb').forEach(b=>b.addEventListener('click',()=>{tip=+b.dataset.t;updateTip();}));
-document.getElementById('pw').addEventListener('input',e=>{power=+e.target.value;document.getElementById('pv').textContent=power;});
-
-document.addEventListener('keydown',e=>{
-  const n=+e.key;
-  if(n>=1&&n<=9){tip=n-5;updateTip();return;}
-  if(e.code==='Space'){e.preventDefault();state===ST.SIM?stopSim():startSim();}
-  if(e.key==='r'||e.key==='R')resetBall();
-});
-
-document.getElementById('shoot-btn').addEventListener('click',()=>{
-  state===ST.SIM?stopSim():startSim();
-});
-
-updateTip();
 
 // ============================================================
 //  메인 렌더
 // ============================================================
 
 function render(){
-  C.clearRect(0,0,cv.width,cv.height);
+  X.clearRect(0,0,cv.width,cv.height);
   drawTable();
 
-  if(state===ST.AIM){
-    // --- 조준 모드 ---
-    const c1h = calcC1Hit(ball.x,ball.y,mouse.x,mouse.y);
-    const dir = detectDir(c1h);
-    curDir=dir;
+  if(st===S.AIM){
+    const c1h=calcC1(ball.x,ball.y,mouse.x,mouse.y);
+    const dir=detectDir(c1h);curDir=dir;
     const sys=dir==='left'?SL:SR;
     drawPts(sys,1);
 
@@ -559,29 +541,42 @@ function render(){
       const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
       const cv_=ext.val;
       drawExt(ext.hit);
+
       if(c1v!==null&&cv_!==null){
         const traj=calcTraj(cv_,c1h,c1v,sys);
         drawTraj(traj);
         updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
+
+        // 물리 예측 경로 (녹색)
+        if(showPhysPred){
+          let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);
+          const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
+          if(sqtOn&&tip!==0){
+            const sq=-tip*PHY.squirt_factor*(power/7);
+            const cs=Math.cos(sq),sn=Math.sin(sq);
+            const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;
+          }
+          const ss=dir==='left'?-1:1;
+          physPredPath=calcPhysPred(ball.x,ball.y,ndx*power,ndy*power,tip*ss);
+          drawPhysPred(physPredPath);
+        }
       }else{drawAim(c1h);resetInfo();}
     }else{drawAim(c1h);resetInfo('상단 쿠션을 겨냥하세요');}
 
     drawBall(ball.x,ball.y,true);
 
-  } else {
-    // --- 시뮬레이션 모드 ---
-    physStep();
+  }else{
+    physStep(ball);
+    trail.push({x:ball.x,y:ball.y,a:1});
+
+    // 쿠션 카운트 (trail 기반)
+    const spd=Math.hypot(ball.vx,ball.vy);
+    if(spd<PHY.min_speed)stopSim();
 
     const sys=curDir==='left'?SL:SR;
-    drawPts(sys,0.3);
-
-    // 예측 궤적 (고스트)
-    if(predTraj) drawTraj(predTraj, 0.25);
-
-    // 트레일
+    drawPts(sys,.25);
+    if(predTraj)drawTraj(predTraj,.2);
     drawTrail();
-
-    // 공
     drawBall(ball.x,ball.y,false);
   }
 
@@ -590,65 +585,139 @@ function render(){
 }
 
 // ============================================================
-//  유틸리티
+//  이벤트
 // ============================================================
 
-function rr(c,x,y,w,h,r){
-  c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);
-  c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);
-  c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+// 물리 스텝에서 쿠션 카운트를 위해 physStep 래퍼
+const _origPhysStep = physStep;
+const physStepWrapped = (b) => {
+  const oldX=b.x,oldY=b.y;
+  _origPhysStep(b);
+  // 위치 변화로 쿠션 감지
+  if(Math.abs(b.x-OX-R)<1||Math.abs(b.x-(OX+TW-R))<1||
+     Math.abs(b.y-OY-R)<1||Math.abs(b.y-(OY+TH-R))<1){
+    if(b.x!==oldX||b.y!==oldY){/* counted in cushionBounce */}
+  }
+};
+
+// 쿠션 카운트를 cushionBounce에 통합
+const _origCB = cushionBounce;
+const cushionBounceCount = function(b, edge) {
+  _origCB(b, edge);
+  if(st === S.SIM) bounces++;
+};
+// 패치
+(function(){
+  const origPhys = physStep;
+  window._physOrig = origPhys;
+})();
+
+// physStep 내 cushionBounce 호출을 카운팅 버전으로 교체하기 위해
+// physStep을 다시 정의
+const physStepFinal = function(b){
+  const spd=Math.hypot(b.vx,b.vy);
+  if(spd<PHY.min_speed)return false;
+  const f=1-PHY.mu_felt;b.vx*=f;b.vy*=f;
+  b.vx+=b.spin*PHY.spin_curve*spd;
+  b.x+=b.vx;b.y+=b.vy;
+  if(b.y-R<=OY){b.y=OY+R;cushionBounce(b,'top');if(st===S.SIM)bounces++;}
+  if(b.y+R>=OY+TH){b.y=OY+TH-R;cushionBounce(b,'bottom');if(st===S.SIM)bounces++;}
+  if(b.x-R<=OX){b.x=OX+R;cushionBounce(b,'left');if(st===S.SIM)bounces++;}
+  if(b.x+R>=OX+TW){b.x=OX+TW-R;cushionBounce(b,'right');if(st===S.SIM)bounces++;}
+  if(bounces>=20&&st===S.SIM)stopSim();
+  return true;
+};
+
+// render에서 사용할 physStep 교체
+// 위의 render 함수 내 physStep(ball)을 physStepFinal로 교체하기 위해
+// render를 재정의
+function renderFinal(){
+  X.clearRect(0,0,cv.width,cv.height);
+  drawTable();
+
+  if(st===S.AIM){
+    const c1h=calcC1(ball.x,ball.y,mouse.x,mouse.y);
+    const dir=detectDir(c1h);curDir=dir;
+    const sys=dir==='left'?SL:SR;
+    drawPts(sys,1);
+
+    if(c1h&&c1h.edge==='top'){
+      const c1v=calcC1Val(c1h,sys);
+      const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
+      const cv_=ext.val;
+      drawExt(ext.hit);
+
+      if(c1v!==null&&cv_!==null){
+        const traj=calcTraj(cv_,c1h,c1v,sys);
+        drawTraj(traj);
+        updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
+
+        if(showPhysPred){
+          let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);
+          const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
+          if(sqtOn&&tip!==0){
+            const sq=-tip*PHY.squirt_factor*(power/7);
+            const cs=Math.cos(sq),sn=Math.sin(sq);
+            const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;
+          }
+          const ss=dir==='left'?-1:1;
+          physPredPath=calcPhysPred(ball.x,ball.y,ndx*power,ndy*power,tip*ss);
+          drawPhysPred(physPredPath);
+        }
+      }else{drawAim(c1h);resetInfo();}
+    }else{drawAim(c1h);resetInfo('상단 쿠션을 겨냥하세요');}
+
+    drawBall(ball.x,ball.y,true);
+  }else{
+    physStepFinal(ball);
+    trail.push({x:ball.x,y:ball.y,a:1});
+    const spd=Math.hypot(ball.vx,ball.vy);
+    if(spd<PHY.min_speed)stopSim();
+
+    const sys=curDir==='left'?SL:SR;
+    drawPts(sys,.25);
+    if(predTraj)drawTraj(predTraj,.2);
+    drawTrail();
+    drawBall(ball.x,ball.y,false);
+  }
+
+  updateStats();
+  requestAnimationFrame(renderFinal);
 }
 
+// 유틸
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
-// ============================================================
-//  마우스 이벤트
-// ============================================================
-
+// 마우스
 function gm(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*(cv.width/r.width),y:(e.clientY-r.top)*(cv.height/r.height)};}
-
-cv.addEventListener('mousedown',e=>{
-  if(state!==ST.AIM)return;
-  const p=gm(e);
-  if(Math.hypot(p.x-ball.x,p.y-ball.y)<=BR_+8){isDrag=true;cv.style.cursor='grabbing';}
-});
-
-cv.addEventListener('mousemove',e=>{
-  const p=gm(e);
-  if(isDrag&&state===ST.AIM){
-    ball.x=clamp(p.x,OX+BR_,OX+TW-BR_);
-    ball.y=clamp(p.y,OY+BR_,OY+TH-BR_);
-  }
-  if(!aimLock)mouse=p;
-  if(!isDrag&&state===ST.AIM){
-    cv.style.cursor=Math.hypot(p.x-ball.x,p.y-ball.y)<=BR_+8?'grab':'crosshair';
-  }
-});
-
+cv.addEventListener('mousedown',e=>{if(st!==S.AIM)return;const p=gm(e);if(Math.hypot(p.x-ball.x,p.y-ball.y)<=R+8){isDrag=true;cv.style.cursor='grabbing';}});
+cv.addEventListener('mousemove',e=>{const p=gm(e);if(isDrag&&st===S.AIM){ball.x=clamp(p.x,OX+R,OX+TW-R);ball.y=clamp(p.y,OY+R,OY+TH-R);}if(!aimLk)mouse=p;if(!isDrag&&st===S.AIM)cv.style.cursor=Math.hypot(p.x-ball.x,p.y-ball.y)<=R+8?'grab':'crosshair';});
 cv.addEventListener('mouseup',()=>{isDrag=false;cv.style.cursor='crosshair';});
-cv.addEventListener('click',e=>{
-  if(state!==ST.AIM)return;
-  const p=gm(e);if(Math.hypot(p.x-ball.x,p.y-ball.y)>BR_+8)aimLock=!aimLock;
-});
+cv.addEventListener('click',e=>{if(st!==S.AIM)return;const p=gm(e);if(Math.hypot(p.x-ball.x,p.y-ball.y)>R+8)aimLk=!aimLk;});
 cv.addEventListener('mouseleave',()=>{isDrag=false;});
 
-// 터치 지원
-cv.addEventListener('touchstart',e=>{
-  e.preventDefault();const t=e.touches[0];
-  const p=gm(t);
-  if(state===ST.AIM&&Math.hypot(p.x-ball.x,p.y-ball.y)<=BR_+20){isDrag=true;}
-  mouse=p;
-},{passive:false});
-cv.addEventListener('touchmove',e=>{
-  e.preventDefault();const t=e.touches[0];const p=gm(t);
-  if(isDrag&&state===ST.AIM){ball.x=clamp(p.x,OX+BR_,OX+TW-BR_);ball.y=clamp(p.y,OY+BR_,OY+TH-BR_);}
-  if(!aimLock)mouse=p;
-},{passive:false});
+// 터치
+cv.addEventListener('touchstart',e=>{e.preventDefault();const p=gm(e.touches[0]);if(st===S.AIM&&Math.hypot(p.x-ball.x,p.y-ball.y)<=R+20)isDrag=true;mouse=p;},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();const p=gm(e.touches[0]);if(isDrag&&st===S.AIM){ball.x=clamp(p.x,OX+R,OX+TW-R);ball.y=clamp(p.y,OY+R,OY+TH-R);}if(!aimLk)mouse=p;},{passive:false});
 cv.addEventListener('touchend',()=>{isDrag=false;});
 
-// ============================================================
-render();
+// 키보드
+document.addEventListener('keydown',e=>{
+  const n=+e.key;if(n>=1&&n<=9){tip=n-5;updateTip();return;}
+  if(e.code==='Space'){e.preventDefault();st===S.SIM?stopSim():startSim();}
+  if(e.key==='r'||e.key==='R')resetBall();
+  if(e.key==='p'||e.key==='P'){showPhysPred=!showPhysPred;}
+});
+
+// UI 이벤트
+document.querySelectorAll('.tb').forEach(b=>b.addEventListener('click',()=>{tip=+b.dataset.t;updateTip();}));
+document.getElementById('pw').addEventListener('input',e=>{power=+e.target.value;document.getElementById('pv').textContent=power;});
+document.getElementById('sqt-cb').addEventListener('change',e=>{sqtOn=e.target.checked;});
+document.getElementById('shoot').addEventListener('click',()=>{st===S.SIM?stopSim():startSim();});
+
+updateTip();
+renderFinal();
 </script>
 </body>
 </html>
