@@ -200,15 +200,18 @@ function updateTipUI(){
 
   let type='';
   if(miscue) type='미스큐!';
-  else if(tipY>1) type=tipX>0?'밀어+정회전':'밀어'+(tipX<0?'+역회전':'');
-  else if(tipY<-1) type=tipX>0?'끌어+정회전':'끌어'+(tipX<0?'+역회전':'');
-  else if(tipX>0) type='정회전';
-  else if(tipX<0) type='역회전';
+  // 정/역회전 판단: 진행방향 기준 (좌향→tipX<0이 정회전, 우향→tipX>0이 정회전)
+  const isRun=(curDir==='left')?(tipX<0):(tipX>0);
+  const eng=tipX===0?'':(isRun?'정회전':'역회전');
+  if(tipY>1) type=eng?'밀어+'+eng:'밀어';
+  else if(tipY<-1) type=eng?'끌어+'+eng:'끌어';
+  else if(tipX!==0) type=eng;
   else type='무회전';
 
   const el=document.getElementById('tip-type');
   el.textContent=type;
-  el.style.color=miscue?'#f44':tipX>0?'#d4a017':tipX<0?'#c0392b':'#aaa';
+  const runCol=(curDir==='left')?(tipX<0):(tipX>0);
+  el.style.color=miscue?'#f44':tipX===0?'#aaa':runCol?'#d4a017':'#c0392b';
 
   drawTipSelector();
 }
