@@ -296,7 +296,7 @@ function rayH(sx,sy,dx,dy,ex){
 //  파이브 앤 하프 시스템
 // ============================================================
 
-function detectDir(c1){if(!c1||c1.edge!=='top')return curDir;return c1.x<ball.x?'left':'right';}
+function detectDir(c1){if(!c1)return curDir;return c1.x<ball.x?'left':'right';}
 function calcC1(bx,by,mx,my){const dx=mx-bx,dy=my-by;if(Math.abs(dx)<.5&&Math.abs(dy)<.5)return null;return rayH(bx,by,dx,dy,null);}
 function calcC1Val(h,s){return(!h||h.edge!=='top')?null:proj(h.x,h.y,s.c1);}
 
@@ -470,15 +470,18 @@ function startSim(){
   }
 
   const c1h=calcC1(ball.x,ball.y,mouse.x,mouse.y);
-  if(!c1h||c1h.edge!=='top')return;
+  if(!c1h)return;
 
   const dir=detectDir(c1h);curDir=dir;
   const sys=dir==='left'?SL:SR;
 
-  // 5&half 예측 저장
-  const c1v=calcC1Val(c1h,sys);
-  const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
-  if(c1v!==null&&ext.val!==null)predTraj=calcTraj(ext.val,c1h,c1v,sys);
+  // 5&half 예측 저장 (상단 쿠션일 때만 시스템 공식 적용)
+  predTraj=null;
+  if(c1h.edge==='top'){
+    const c1v=calcC1Val(c1h,sys);
+    const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
+    if(c1v!==null&&ext.val!==null)predTraj=calcTraj(ext.val,c1h,c1v,sys);
+  }
 
   // 발사 벡터
   let dx=c1h.x-ball.x,dy=c1h.y-ball.y;
@@ -531,16 +534,13 @@ function drawTable(){
 }
 function dm(x,y){const s=3;X.beginPath();X.moveTo(x,y-s);X.lineTo(x+s,y);X.lineTo(x,y+s);X.lineTo(x-s,y);X.closePath();X.fill();}
 
-function dPts(pts,col,side,a){
-  X.font='bold 10px sans-serif';X.textAlign='center';X.textBaseline='middle';X.globalAlpha=a||1;
-  for(const p of pts){X.beginPath();X.arc(p.x,p.y,3,0,Math.PI*2);X.fillStyle=col;X.fill();
-    let lx=p.x,ly=p.y;if(side==='a')ly-=14;if(side==='b')ly+=14;if(side==='b2')ly+=28;
-    if(side==='l')lx-=16;if(side==='r')lx+=16;
-    X.fillStyle='rgba(255,255,255,.75)';X.fillText(p.val,lx,ly);}
+function dPts(pts,col,a){
+  X.globalAlpha=a||1;
+  for(const p of pts){X.beginPath();X.arc(p.x,p.y,2.5,0,Math.PI*2);X.fillStyle=col;X.fill();}
   X.globalAlpha=1;
 }
-function drawPts(s,a){dPts(s.c1,'#ffcc44','a',a);dPts(s.c3,'#ff8888','b',a);
-  dPts(s.cs,'#88ccff',s.ss==='right'?'r':'l',a);dPts(s.cl.slice(1),'#88ccff','b2',a);}
+function drawPts(s,a){dPts(s.c1,'#ffcc44',a);dPts(s.c3,'#ff8888',a);
+  dPts(s.cs,'#88ccff',a);dPts(s.cl.slice(1),'#88ccff',a);}
 
 function drawBall(x,y,showTip){
   X.beginPath();X.arc(x+2,y+2,R,0,Math.PI*2);X.fillStyle='rgba(0,0,0,.3)';X.fill();
@@ -637,26 +637,32 @@ function render(){
     const sys=dir==='left'?SL:SR;
     drawPts(sys,1);
 
-    if(c1h&&c1h.edge==='top'){
-      const c1v=calcC1Val(c1h,sys);
-      const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
-      const cv_=ext.val;
-      drawExt(ext.hit);
-      if(c1v!==null&&cv_!==null){
-        const traj=calcTraj(cv_,c1h,c1v,sys);
-        drawTraj(traj);
-        updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
-        // 물리 예측
-        if(showPP){
-          let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
-          if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
-            const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
-          const ss=dir==='left'?-1:1;
-          ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,tipX,tipY*power*0.15);
-          drawPP(ppPath);
-        }
-      }else{drawAim(c1h);resetInfo();}
-    }else{drawAim(c1h);resetInfo('상단 쿠션을 겨냥하세요');}
+    if(c1h){
+      // 5&half 시스템 (상단 쿠션 조준 시에만)
+      if(c1h.edge==='top'){
+        const c1v=calcC1Val(c1h,sys);
+        const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
+        const cv_=ext.val;
+        drawExt(ext.hit);
+        if(c1v!==null&&cv_!==null){
+          const traj=calcTraj(cv_,c1h,c1v,sys);
+          drawTraj(traj);
+          updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
+        }else{drawAim(c1h);resetInfo();}
+      }else{
+        // 상단 외 쿠션: 겨냥선만 표시
+        drawAim(c1h);
+        resetInfo();
+      }
+      // 물리 예측 (모든 방향)
+      if(showPP){
+        let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
+        if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
+          const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
+        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,tipX,tipY*power*0.15);
+        drawPP(ppPath);
+      }
+    }else{resetInfo();}
     drawBall(ball.x,ball.y,true);
   }else{
     const bo=physicsStep(ball);
