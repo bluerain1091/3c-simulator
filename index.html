@@ -114,11 +114,11 @@ const P = {
   mu_cushion:   0.10,     // 쿠션 마찰 (사이드 스핀→접선)
   restitution:  0.92,     // 쿠션 법선 반발
   spinX_decay:  0.22,     // 사이드스핀 감쇠
-  spinY_decay:  0.15,     // 전후진 스핀 감쇠 (더 오래 유지)
-  spinY_accel:  0.003,    // spinY → Follow/Draw (팔로우 지배적)
+  spinY_decay:  0.12,     // 전후진 스핀 감쇠 (오래 유지)
+  spinY_accel:  0.008,    // spinY → Follow/Draw (팔로우 지배적, 2.5배↑)
   spinX_curve:  0.00005,  // spinX → 커브
   squirt:       0.005,    // 스쿼트
-  reverse_grip: 1.0,      // 리버스 그립 (대칭)
+  reverse_grip: 0.2,      // 리버스 그립 (러닝의 1/5, SLDT 역산)
   min_spd:      0.10,
 };
 
