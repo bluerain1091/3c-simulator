@@ -109,7 +109,7 @@ const R=10;
 // --- 물리 상수 ---
 const P = {
   mu_felt:    0.0020,   // 바닥 동마찰
-  mu_cushion: 0.028,    // 쿠션 마찰 (스핀→접선 전달, 3팁 기준 보정)
+  mu_cushion: 0.055,    // 쿠션 마찰 (스핀→접선 전달, 10:30 3팁 기준)
   restitution:0.88,     // 쿠션 반발
   spinX_decay_base:0.35,// 좌우 스핀 감쇠 (쿠션)
   spinX_decay_ang: 0.20,// 입사각 보정 감쇠
@@ -122,10 +122,10 @@ const P = {
 };
 
 // --- 당점 ---
-let tipX = 3.0;   // -4 ~ +4 (좌우, 0.5단위)
-let tipY = 0.0;   // -4 ~ +4 (상하, 0.5단위)
+let tipX = 2.0;   // -4 ~ +4 (좌우, 0.5단위) — 기본 10:30 방향
+let tipY = 2.0;   // -4 ~ +4 (상하, 0.5단위) — 기본 10:30 방향
 const MISCUE_R = 4.0;
-const STD_TX = 3, TIP_ADJ = 2.5;
+const STD_TX = 2, TIP_ADJ = 2.5; // 시스템 기준: 10:30 방향 (tipX=2)
 
 // --- 상태 ---
 let power=7, sqtOn=false, showPP=true;
