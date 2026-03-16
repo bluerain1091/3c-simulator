@@ -382,13 +382,17 @@ function physicsStep(b){
   const f=1-P.mu_felt;
   b.vx*=f; b.vy*=f;
 
-  // spinY → Follow/Draw (속도 가감속) — tipY=0이면 적용 안함
+  // spinY → Follow: 감속 완화 / Draw: 추가 감속 — 절대 가속 안 함
   if(Math.abs(b.sy)>0.05 && spd>0.3){
     const natSpin=spd*0.1;
-    const accel=(b.sy-natSpin)*P.spinY_accel;
-    b.vx+=(b.vx/spd)*accel;
-    b.vy+=(b.vy/spd)*accel;
-    b.sy+=(natSpin-b.sy)*0.0035; // spinY → 자연회전에 수렴 (느리게)
+    const raw=(b.sy-natSpin)*P.spinY_accel;
+    // 양수(가속)면 마찰 상쇄까지만 허용 (순가속 금지)
+    const maxBoost=P.mu_felt*spd; // 마찰이 깎는 양
+    const accel=Math.max(raw, -spd*0.01); // Draw 감속 제한
+    const clamped=Math.min(accel, maxBoost); // Follow는 마찰 상쇄까지만
+    b.vx+=(b.vx/spd)*clamped;
+    b.vy+=(b.vy/spd)*clamped;
+    b.sy+=(natSpin-b.sy)*0.0035;
   }
 
   // spinX → 커브
@@ -461,8 +465,9 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,a=(g.sy-ns)*P.spinY_accel;
-      g.vx+=(g.vx/spd)*a;g.vy+=(g.vy/spd)*a;g.sy+=(ns-g.sy)*0.0035;}
+    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,raw=(g.sy-ns)*P.spinY_accel;
+      const c=Math.min(Math.max(raw,-spd*0.01),P.mu_felt*spd);
+      g.vx+=(g.vx/spd)*c;g.vy+=(g.vy/spd)*c;g.sy+=(ns-g.sy)*0.0035;}
     g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
