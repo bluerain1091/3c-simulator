@@ -58,18 +58,37 @@
 
 <script>
 // ============================================================
-//  설정 상수
+//  파이브 앤 하프 시스템 (Five and a Half System)
+//
+//  당구대 배치도 (위에서 내려다 본 모습):
+//
+//         ←── 1쿠션 (상단 단쿠션) ──→
+//    TL 40───30───20───10───0 TR
+//    │                         │  10  ← 수구 (우측 장쿠션)
+//    │                         │  15     장쿠션: 다이아몬드당 5
+//    │   2쿠션                 │  20
+//    │   (좌측 장쿠션)         │  25
+//    │                         │  30
+//    │                         │  35
+//    │                         │  40
+//    │                         │  45
+//    BL 0───10───20───30───40 BR  50  ← 수구 기준점 (코너=50)
+//       ←── 3쿠션 (하단 단쿠션) ──→
+//       ← 수구 연장: 60──70──80
+//
+//  공식: 수구 포인트 - 1쿠션 포인트 = 3쿠션 포인트
+//  경로: 수구(우측) → 1쿠션(상단) → 2쿠션(좌측) → 3쿠션(하단)
 // ============================================================
 
 const canvas = document.getElementById('table');
 const ctx = canvas.getContext('2d');
 
 // 당구대 내부 크기 (3쿠션 규격 2:1)
-const TABLE_W = 800;                 // 내부 폭
-const TABLE_H = 400;                 // 내부 높이
-const CUSHION = 28;                  // 쿠션 두께
-const RAIL = 18;                     // 레일(바깥 테두리) 두께
-const PADDING = 40;                  // 캔버스 여백
+const TABLE_W = 800;
+const TABLE_H = 400;
+const CUSHION = 28;
+const RAIL = 18;
+const PADDING = 40;
 
 canvas.width  = TABLE_W + (CUSHION + RAIL) * 2 + PADDING * 2;
 canvas.height = TABLE_H + (CUSHION + RAIL) * 2 + PADDING * 2;
@@ -78,52 +97,29 @@ canvas.height = TABLE_H + (CUSHION + RAIL) * 2 + PADDING * 2;
 const OX = PADDING + RAIL + CUSHION;
 const OY = PADDING + RAIL + CUSHION;
 
+// 코너 좌표 약칭
+const TR_X = OX + TABLE_W, TR_Y = OY;             // 우상
+const TL_X = OX,           TL_Y = OY;             // 좌상
+const BR_X = OX + TABLE_W, BR_Y = OY + TABLE_H;   // 우하
+const BL_X = OX,           BL_Y = OY + TABLE_H;   // 좌하
+
 // 색상
 const COLOR_RAIL    = '#5a3a1a';
 const COLOR_CUSHION = '#2d8c3c';
 const COLOR_FELT    = '#1b7a30';
 const COLOR_LINE    = '#1a6b28';
-const COLOR_CUE     = '#f5f5f0';
-const COLOR_AIM     = 'rgba(255, 255, 80, 0.5)';
-const COLOR_TRAJ    = '#ff4444';
+const COLOR_TRAJ1   = '#ff4444';
 const COLOR_TRAJ2   = '#ffaa00';
+const COLOR_TRAJ3   = '#ff6666';
+const COLOR_AIM     = 'rgba(255, 255, 80, 0.5)';
 
-// 수구 반지름
 const BALL_R = 10;
 
 // ============================================================
-//  파이브 앤 하프 포인트 정의
-//  - 포인트는 쿠션 위의 특정 위치에 숫자를 부여한 것
-//  - 여기서는 표준적인 배치를 사용
+//  포인트 좌표 생성
 // ============================================================
 
-/**
- * 파이브 앤 하프 시스템 포인트 배치 (표준)
- *
- * 당구대를 위에서 내려다본 모습:
- *
- *        ← 상단 쿠션 (1쿠션 포인트) →
- *   ┌──────────────────────────────────┐
- *   │ 0  10  20  30  40  50  60  70  80│  ← 상단: 좌→우
- *   │                                  │
- *   │                                  │
- *   │                                  │  좌측: 수구 포인트 (하→상)
- *   │                                  │  우측: 3쿠션 포인트 (상→하)
- *   │                                  │
- *   │                                  │
- *   │ 0  10  20  30  40  50  60  70  80│  ← 하단
- *   └──────────────────────────────────┘
- *
- * 수구 포인트: 우측 하단 코너에서 시작, 하단→좌측→상단 방향
- * 1쿠션 포인트: 우측 상단 코너에서 시작, 상단 쿠션 우→좌
- * 3쿠션 포인트: 좌측 하단 코너에서 시작, 좌측 쿠션 하→상 + 상단
- */
-
-// 포인트 좌표를 생성하는 헬퍼
-// 각 변은 0~80 포인트, 10단위로 9개 점
-
-function buildPointsOnEdge(x0, y0, x1, y1, values) {
-  // (x0,y0)에서 (x1,y1)까지 values 배열에 대응하는 좌표 생성
+function buildPoints(x0, y0, x1, y1, values) {
   const pts = [];
   const n = values.length - 1;
   for (let i = 0; i <= n; i++) {
@@ -138,114 +134,98 @@ function buildPointsOnEdge(x0, y0, x1, y1, values) {
 }
 
 // --- 수구 포인트 ---
-// 수구는 보통 우측 하단에서 출발, 하단 쿠션(우→좌) + 좌측 쿠션(하→상)을 따라 배치
-// 하단 쿠션: 우→좌 (0~40), 좌측 쿠션: 하→상 (40 이상은 50~80)
-const cuePointsBottom = buildPointsOnEdge(
-  OX + TABLE_W, OY + TABLE_H,     // 우하
-  OX + TABLE_W / 2, OY + TABLE_H, // 하단 중앙
-  [0, 10, 20, 30]
+// 우측 장쿠션: BR(50) → TR(10), 다이아몬드당 5, 총 8다이아몬드
+const cuePointsRight = buildPoints(
+  BR_X, BR_Y,  // 우하 코너 = 50
+  TR_X, TR_Y,  // 우상 코너 = 10
+  [50, 45, 40, 35, 30, 25, 20, 15, 10]
 );
-const cuePointsBottom2 = buildPointsOnEdge(
-  OX + TABLE_W / 2, OY + TABLE_H, // 하단 중앙
-  OX, OY + TABLE_H,               // 좌하
-  [30, 40, 50, 60]
-);
-const cuePointsLeft = buildPointsOnEdge(
-  OX, OY + TABLE_H,               // 좌하
-  OX, OY,                         // 좌상
-  [60, 70, 80, 90, 100, 110, 120, 130, 140]
+// 하단 단쿠션 (수구 연장): BR(50) → BL 방향, 다이아몬드당 10
+// 반 다이아몬드당 10 (50 이후 간격 좁아짐)
+const cuePointsBottom = buildPoints(
+  BR_X, BR_Y,  // 우하 = 50 (이미 포함됨)
+  BL_X, BL_Y,  // 좌하 = 80
+  [50, 60, 70, 80]
 );
 
+// 수구 전체 폴리라인: 하단(80→50) + 우측(50→10) — 값이 증가하는 순서로 통합
 const cuePoints = [
-  ...cuePointsBottom,
-  ...cuePointsBottom2.slice(1),
-  ...cuePointsLeft.slice(1)
+  ...cuePointsBottom.slice().reverse(),  // 80→50 (BL→BR)
+  ...cuePointsRight.slice(1)              // 45→10 (BR 위→TR)
 ];
 
 // --- 1쿠션 포인트 ---
-// 상단 쿠션: 우→좌
-const firstCushionTop = buildPointsOnEdge(
-  OX + TABLE_W, OY,   // 우상
-  OX, OY,             // 좌상
-  [0, 10, 20, 30, 40, 50, 60, 70, 80]
+// 상단 단쿠션: TR(0) → TL(40), 다이아몬드당 10, 총 4다이아몬드
+const firstCushionPoints = buildPoints(
+  TR_X, TR_Y,  // 우상 = 0
+  TL_X, TL_Y,  // 좌상 = 40
+  [0, 10, 20, 30, 40]
 );
 
 // --- 3쿠션 포인트 ---
-// 우측 쿠션: 상→하
-const thirdCushionRight = buildPointsOnEdge(
-  OX + TABLE_W, OY,           // 우상
-  OX + TABLE_W, OY + TABLE_H, // 우하
-  [0, 10, 20, 30, 40, 50, 60, 70, 80]
+// 하단 단쿠션: BL(0) → BR(40), 다이아몬드당 10, 총 4다이아몬드
+const thirdCushionPoints = buildPoints(
+  BL_X, BL_Y,  // 좌하 = 0
+  BR_X, BR_Y,  // 우하 = 40
+  [0, 10, 20, 30, 40]
 );
 
 // ============================================================
 //  수구 상태
 // ============================================================
 
-let cueBall = { x: OX + TABLE_W * 0.75, y: OY + TABLE_H * 0.7 };
+// 초기 위치: 수구 포인트 50 근처 (우하 코너)
+let cueBall = { x: BR_X - 30, y: BR_Y - 60 };
 let isDragging = false;
-let aimLocked = false;      // 겨냥점 고정 여부
+let aimLocked = false;
 let mousePos = { x: 0, y: 0 };
 
 // ============================================================
 //  그리기 함수들
 // ============================================================
 
-/** 당구대 배경 (레일 + 쿠션 + 필드) */
 function drawTable() {
   // 바깥 레일
-  const rx = PADDING;
-  const ry = PADDING;
-  const rw = TABLE_W + (CUSHION + RAIL) * 2;
-  const rh = TABLE_H + (CUSHION + RAIL) * 2;
   ctx.fillStyle = COLOR_RAIL;
-  roundRect(ctx, rx, ry, rw, rh, 10);
+  roundRect(ctx, PADDING, PADDING,
+    TABLE_W + (CUSHION + RAIL) * 2,
+    TABLE_H + (CUSHION + RAIL) * 2, 10);
   ctx.fill();
 
-  // 쿠션 영역
-  const cx = PADDING + RAIL;
-  const cy = PADDING + RAIL;
-  const cw = TABLE_W + CUSHION * 2;
-  const ch = TABLE_H + CUSHION * 2;
+  // 쿠션
   ctx.fillStyle = COLOR_CUSHION;
-  ctx.fillRect(cx, cy, cw, ch);
+  ctx.fillRect(PADDING + RAIL, PADDING + RAIL,
+    TABLE_W + CUSHION * 2, TABLE_H + CUSHION * 2);
 
-  // 필드 (플레이 영역)
+  // 필드
   ctx.fillStyle = COLOR_FELT;
   ctx.fillRect(OX, OY, TABLE_W, TABLE_H);
 
-  // 필드 내부 미세한 선 (장식)
+  // 중앙선 (세로)
   ctx.strokeStyle = COLOR_LINE;
   ctx.lineWidth = 0.5;
-  // 세로 중앙선
   ctx.beginPath();
   ctx.moveTo(OX + TABLE_W / 2, OY);
   ctx.lineTo(OX + TABLE_W / 2, OY + TABLE_H);
   ctx.stroke();
 
-  // 다이아몬드 마커 (쿠션 위 작은 원형 마커) — 레일 위에 표시
   drawDiamonds();
 }
 
-/** 레일 위 다이아몬드 마커 */
 function drawDiamonds() {
   const dSize = 3;
   ctx.fillStyle = '#f0e6c0';
 
-  // 상단/하단 레일: 8등분
-  for (let i = 1; i < 8; i++) {
-    const x = OX + (TABLE_W / 8) * i;
-    // 상단
+  // 상단/하단 레일: 4다이아몬드 (단쿠션), 3개 내부 마커
+  for (let i = 1; i < 4; i++) {
+    const x = OX + (TABLE_W / 4) * i;
     drawDiamond(x, PADDING + RAIL / 2, dSize);
-    // 하단
     drawDiamond(x, OY + TABLE_H + CUSHION + RAIL / 2, dSize);
   }
-  // 좌측/우측 레일: 4등분
-  for (let i = 1; i < 4; i++) {
-    const y = OY + (TABLE_H / 4) * i;
-    // 좌측
+  // 좌측/우측 레일: 8다이아몬드 (장쿠션), 7개 내부 마커
+  for (let i = 1; i < 8; i++) {
+    const y = OY + (TABLE_H / 8) * i;
     drawDiamond(PADDING + RAIL / 2, y, dSize);
-    // 우측
     drawDiamond(OX + TABLE_W + CUSHION + RAIL / 2, y, dSize);
   }
 }
@@ -260,33 +240,30 @@ function drawDiamond(cx, cy, s) {
   ctx.fill();
 }
 
-/** 포인트를 쿠션 안쪽 가장자리에 작은 점과 숫자로 표시 */
-function drawPoints(points, color, labelSide) {
-  ctx.fillStyle = color;
-  ctx.font = '9px sans-serif';
+function drawPointSet(points, color, labelSide) {
+  ctx.font = '10px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
   for (const p of points) {
-    // 작은 점
+    // 점
     ctx.beginPath();
     ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
 
-    // 숫자 라벨 (쿠션 바깥쪽으로 오프셋)
+    // 라벨
     let lx = p.x, ly = p.y;
-    if (labelSide === 'above')     ly -= 12;
-    else if (labelSide === 'below') ly += 12;
-    else if (labelSide === 'left')  lx -= 14;
-    else if (labelSide === 'right') lx += 14;
+    if (labelSide === 'above')  ly -= 13;
+    if (labelSide === 'below')  ly += 13;
+    if (labelSide === 'left')   lx -= 16;
+    if (labelSide === 'right')  lx += 16;
 
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.fillText(p.val, lx, ly);
   }
 }
 
-/** 수구 그리기 */
 function drawCueBall() {
   // 그림자
   ctx.beginPath();
@@ -294,7 +271,7 @@ function drawCueBall() {
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.fill();
 
-  // 공
+  // 공 (그라데이션)
   const grad = ctx.createRadialGradient(
     cueBall.x - 3, cueBall.y - 3, 1,
     cueBall.x, cueBall.y, BALL_R
@@ -315,95 +292,7 @@ function drawCueBall() {
 // ============================================================
 
 /**
- * 수구 위치에서 가장 가까운 수구 포인트 값을 보간하여 계산
- * - 수구 포인트 선분들 위로 수구를 투영하여 연속적인 값을 구함
- */
-function calcCuePointValue(bx, by) {
-  return projectOntoPolyline(bx, by, cuePoints);
-}
-
-/**
- * 겨냥선이 1쿠션(상단)에 닿는 지점의 1쿠션 포인트 값
- */
-function calcFirstCushionHit(bx, by, mx, my) {
-  // 수구에서 마우스 방향 벡터
-  const dx = mx - bx;
-  const dy = my - by;
-
-  // 상단 쿠션 (y = OY)
-  if (dy < 0) {
-    const t = (OY - by) / dy;
-    const hitX = bx + dx * t;
-    if (hitX >= OX && hitX <= OX + TABLE_W) {
-      return { x: hitX, y: OY, edge: 'top' };
-    }
-  }
-
-  // 하단 쿠션 (y = OY + TABLE_H)
-  if (dy > 0) {
-    const t = (OY + TABLE_H - by) / dy;
-    const hitX = bx + dx * t;
-    if (hitX >= OX && hitX <= OX + TABLE_W) {
-      return { x: hitX, y: OY + TABLE_H, edge: 'bottom' };
-    }
-  }
-
-  // 좌측 쿠션 (x = OX)
-  if (dx < 0) {
-    const t = (OX - bx) / dx;
-    const hitY = by + dy * t;
-    if (hitY >= OY && hitY <= OY + TABLE_H) {
-      return { x: OX, y: hitY, edge: 'left' };
-    }
-  }
-
-  // 우측 쿠션 (x = OX + TABLE_W)
-  if (dx > 0) {
-    const t = (OX + TABLE_W - bx) / dx;
-    const hitY = by + dy * t;
-    if (hitY >= OY && hitY <= OY + TABLE_H) {
-      return { x: OX + TABLE_W, y: hitY, edge: 'right' };
-    }
-  }
-
-  return null;
-}
-
-/**
- * 1쿠션 히트 좌표에서 1쿠션 포인트 값을 계산
- */
-function calcFirstCushionValue(hit) {
-  if (!hit) return null;
-  if (hit.edge === 'top') {
-    return projectOntoPolyline(hit.x, hit.y, firstCushionTop);
-  }
-  // 다른 쿠션에 맞을 경우 — 상단만 1쿠션으로 사용 (기본 시나리오)
-  return null;
-}
-
-/**
- * 3쿠션 포인트 값 → 좌표 변환
- */
-function thirdCushionValueToPos(val) {
-  // val 범위 클램프
-  val = Math.max(0, Math.min(80, val));
-  const pts = thirdCushionRight;
-  // 선형 보간
-  for (let i = 0; i < pts.length - 1; i++) {
-    if (val >= pts[i].val && val <= pts[i + 1].val) {
-      const t = (val - pts[i].val) / (pts[i + 1].val - pts[i].val);
-      return {
-        x: pts[i].x + (pts[i + 1].x - pts[i].x) * t,
-        y: pts[i].y + (pts[i + 1].y - pts[i].y) * t
-      };
-    }
-  }
-  // 범위 밖이면 마지막 점
-  return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
-}
-
-/**
- * 폴리라인 위로 점을 투영하여 보간된 포인트 값을 반환
+ * 폴리라인 위로 점을 투영하여 보간된 포인트 값 반환
  */
 function projectOntoPolyline(px, py, points) {
   let bestDist = Infinity;
@@ -426,105 +315,171 @@ function projectOntoPolyline(px, py, points) {
   return bestVal;
 }
 
-// ============================================================
-//  궤적 계산 (1쿠션 → 2쿠션 → 3쿠션)
-// ============================================================
+/**
+ * 수구 위치 → 수구 포인트 값 (보간)
+ */
+function calcCuePointValue(bx, by) {
+  // 우측 장쿠션 + 하단 단쿠션의 폴리라인에 투영
+  // 장쿠션에 더 가까우면 장쿠션 기준, 하단에 더 가까우면 하단 기준
+  const distToRight  = Math.abs(bx - BR_X);
+  const distToBottom = Math.abs(by - BR_Y);
+
+  if (distToRight <= distToBottom) {
+    // 우측 장쿠션 기준
+    return projectOntoPolyline(bx, by, cuePointsRight);
+  } else {
+    // 하단 단쿠션 기준
+    return projectOntoPolyline(bx, by, cuePointsBottom);
+  }
+}
 
 /**
- * 반사 궤적 시뮬레이션
- * 1쿠션 히트 후 반사 방향으로 진행하여 2쿠션, 3쿠션을 구함
- * 2쿠션 위치는 3쿠션 목표 포인트를 향해 보정
+ * 수구에서 마우스 방향으로 쏘았을 때 첫 번째 쿠션(상단) 히트 지점
+ * 파이브 앤 하프 시스템은 1쿠션 = 상단 단쿠션
+ */
+function calcFirstCushionHit(bx, by, mx, my) {
+  const dx = mx - bx;
+  const dy = my - by;
+  if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return null;
+
+  let bestT = Infinity;
+  let bestHit = null;
+
+  // 상단 (y = OY)
+  if (dy < 0) {
+    const t = (OY - by) / dy;
+    const hx = bx + dx * t;
+    if (t > 0 && hx >= OX && hx <= OX + TABLE_W && t < bestT) {
+      bestT = t;
+      bestHit = { x: hx, y: OY, edge: 'top' };
+    }
+  }
+  // 하단 (y = OY + TABLE_H)
+  if (dy > 0) {
+    const t = (OY + TABLE_H - by) / dy;
+    const hx = bx + dx * t;
+    if (t > 0 && hx >= OX && hx <= OX + TABLE_W && t < bestT) {
+      bestT = t;
+      bestHit = { x: hx, y: OY + TABLE_H, edge: 'bottom' };
+    }
+  }
+  // 좌측 (x = OX)
+  if (dx < 0) {
+    const t = (OX - bx) / dx;
+    const hy = by + dy * t;
+    if (t > 0 && hy >= OY && hy <= OY + TABLE_H && t < bestT) {
+      bestT = t;
+      bestHit = { x: OX, y: hy, edge: 'left' };
+    }
+  }
+  // 우측 (x = OX + TABLE_W)
+  if (dx > 0) {
+    const t = (OX + TABLE_W - bx) / dx;
+    const hy = by + dy * t;
+    if (t > 0 && hy >= OY && hy <= OY + TABLE_H && t < bestT) {
+      bestT = t;
+      bestHit = { x: OX + TABLE_W, y: hy, edge: 'right' };
+    }
+  }
+
+  return bestHit;
+}
+
+/**
+ * 1쿠션 히트 좌표 → 1쿠션 포인트 값 (상단 단쿠션만 유효)
+ */
+function calcFirstCushionValue(hit) {
+  if (!hit || hit.edge !== 'top') return null;
+  return projectOntoPolyline(hit.x, hit.y, firstCushionPoints);
+}
+
+/**
+ * 3쿠션 포인트 값 → 좌표 (하단 단쿠션)
+ */
+function thirdCushionValueToPos(val) {
+  val = Math.max(0, Math.min(40, val));
+  const pts = thirdCushionPoints;
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (val >= pts[i].val && val <= pts[i + 1].val) {
+      const t = (val - pts[i].val) / (pts[i + 1].val - pts[i].val);
+      return {
+        x: pts[i].x + (pts[i + 1].x - pts[i].x) * t,
+        y: pts[i].y + (pts[i + 1].y - pts[i].y) * t
+      };
+    }
+  }
+  return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
+}
+
+/**
+ * 직선이 테이블 경계와 만나는 첫 번째 점
+ */
+function findNextCushionHit(sx, sy, tx, ty, excludeEdge) {
+  const dx = tx - sx;
+  const dy = ty - sy;
+  let bestT = Infinity;
+  let bestHit = null;
+
+  const edges = [
+    { edge: 'top',    check: dy < 0, t: (OY - sy) / dy,               axis: 'x' },
+    { edge: 'bottom', check: dy > 0, t: (OY + TABLE_H - sy) / dy,     axis: 'x' },
+    { edge: 'left',   check: dx < 0, t: (OX - sx) / dx,               axis: 'y' },
+    { edge: 'right',  check: dx > 0, t: (OX + TABLE_W - sx) / dx,     axis: 'y' },
+  ];
+
+  for (const e of edges) {
+    if (!e.check || e.edge === excludeEdge) continue;
+    const t = e.t;
+    if (t <= 0.001 || t >= bestT) continue;
+    const hx = sx + dx * t;
+    const hy = sy + dy * t;
+    if (e.axis === 'x' && hx >= OX && hx <= OX + TABLE_W) {
+      bestT = t;
+      bestHit = { x: hx, y: e.edge === 'top' ? OY : OY + TABLE_H, edge: e.edge };
+    }
+    if (e.axis === 'y' && hy >= OY && hy <= OY + TABLE_H) {
+      bestT = t;
+      bestHit = { x: e.edge === 'left' ? OX : OX + TABLE_W, y: hy, edge: e.edge };
+    }
+  }
+
+  return bestHit;
+}
+
+/**
+ * 파이브 앤 하프 궤적 계산
+ * 경로: 수구 → 1쿠션(상단) → 2쿠션(좌측) → 3쿠션(하단)
  */
 function calcTrajectory(cueVal, c1Hit, c1Val) {
   if (!c1Hit || c1Val === null) return null;
 
-  // 3쿠션 포인트 = 수구 포인트 - 1쿠션 포인트
+  // 공식: 수구 - 1쿠션 = 3쿠션
   const c3Val = cueVal - c1Val;
+  if (c3Val < 0 || c3Val > 40) return { c1: c1Hit, c2: null, c3: null, c3Val: c3Val, outOfRange: true };
+
   const c3Pos = thirdCushionValueToPos(c3Val);
 
-  // 1쿠션에서 반사: 상단 쿠션이므로 Y 반전
-  // 하지만 파이브 앤 하프 시스템에서는 직접 반사보다는
-  // 공식 기반 경로를 보여주는 것이 목적이므로,
-  // 1쿠션 → 2쿠션(좌측 쿠션) → 3쿠션(우측 쿠션) 경로를 계산
-
-  // 2쿠션: 1쿠션에서 3쿠션 방향으로 진행할 때 좌측 쿠션에 닿는 점
-  const c2Hit = findCushionHit(c1Hit.x, c1Hit.y, c3Pos.x, c3Pos.y, c1Hit.edge);
+  // 2쿠션: 1쿠션(상단)에서 3쿠션(하단) 방향으로 갈 때 좌측 장쿠션에 닿는 점
+  const c2Hit = findNextCushionHit(c1Hit.x, c1Hit.y, c3Pos.x, c3Pos.y, 'top');
 
   return {
     c1: c1Hit,
     c2: c2Hit,
     c3: c3Pos,
-    c3Val: c3Val
+    c3Val: c3Val,
+    outOfRange: false
   };
 }
 
-/**
- * 출발점에서 목표를 향해 갈 때, 중간에 쿠션에 맞는 점 계산
- * (1쿠션 히트 후 → 다음 쿠션까지 직선 반사 시뮬레이션)
- */
-function findCushionHit(sx, sy, tx, ty, excludeEdge) {
-  // sx,sy에서 tx,ty 방향으로 연장했을 때 테이블 경계와 만나는 첫 번째 점
-  const dx = tx - sx;
-  const dy = ty - sy;
-
-  let bestT = Infinity;
-  let bestHit = null;
-
-  // 상단
-  if (dy < 0 && excludeEdge !== 'top') {
-    const t = (OY - sy) / dy;
-    if (t > 0.001) {
-      const hx = sx + dx * t;
-      if (hx >= OX && hx <= OX + TABLE_W && t < bestT) {
-        bestT = t; bestHit = { x: hx, y: OY, edge: 'top' };
-      }
-    }
-  }
-  // 하단
-  if (dy > 0 && excludeEdge !== 'bottom') {
-    const t = (OY + TABLE_H - sy) / dy;
-    if (t > 0.001) {
-      const hx = sx + dx * t;
-      if (hx >= OX && hx <= OX + TABLE_W && t < bestT) {
-        bestT = t; bestHit = { x: hx, y: OY + TABLE_H, edge: 'bottom' };
-      }
-    }
-  }
-  // 좌측
-  if (dx < 0 && excludeEdge !== 'left') {
-    const t = (OX - sx) / dx;
-    if (t > 0.001) {
-      const hy = sy + dy * t;
-      if (hy >= OY && hy <= OY + TABLE_H && t < bestT) {
-        bestT = t; bestHit = { x: OX, y: hy, edge: 'left' };
-      }
-    }
-  }
-  // 우측
-  if (dx > 0 && excludeEdge !== 'right') {
-    const t = (OX + TABLE_W - sx) / dx;
-    if (t > 0.001) {
-      const hy = sy + dy * t;
-      if (hy >= OY && hy <= OY + TABLE_H && t < bestT) {
-        bestT = t; bestHit = { x: OX + TABLE_W, y: hy, edge: 'right' };
-      }
-    }
-  }
-
-  return bestHit || { x: tx, y: ty, edge: null };
-}
-
 // ============================================================
-//  겨냥선 및 궤적 그리기
+//  궤적 & 겨냥선 그리기
 // ============================================================
 
-function drawAimLine(c1Hit) {
-  if (!c1Hit) return;
-
-  // 수구 → 1쿠션: 반투명 겨냥선
+function drawAimLine(hit) {
+  if (!hit) return;
   ctx.beginPath();
   ctx.moveTo(cueBall.x, cueBall.y);
-  ctx.lineTo(c1Hit.x, c1Hit.y);
+  ctx.lineTo(hit.x, hit.y);
   ctx.strokeStyle = COLOR_AIM;
   ctx.lineWidth = 1.5;
   ctx.setLineDash([6, 4]);
@@ -535,40 +490,36 @@ function drawAimLine(c1Hit) {
 function drawTrajectory(traj) {
   if (!traj) return;
 
-  // 수구 → 1쿠션 (실선)
+  // 수구 → 1쿠션
   ctx.beginPath();
   ctx.moveTo(cueBall.x, cueBall.y);
   ctx.lineTo(traj.c1.x, traj.c1.y);
-  ctx.strokeStyle = COLOR_TRAJ;
+  ctx.strokeStyle = COLOR_TRAJ1;
   ctx.lineWidth = 2;
   ctx.stroke();
+  drawHitMarker(traj.c1.x, traj.c1.y, COLOR_TRAJ1);
 
-  // 1쿠션 히트 마커
-  drawHitMarker(traj.c1.x, traj.c1.y, COLOR_TRAJ);
+  if (traj.outOfRange || !traj.c2 || !traj.c3) return;
 
   // 1쿠션 → 2쿠션
-  if (traj.c2) {
-    ctx.beginPath();
-    ctx.moveTo(traj.c1.x, traj.c1.y);
-    ctx.lineTo(traj.c2.x, traj.c2.y);
-    ctx.strokeStyle = COLOR_TRAJ2;
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(traj.c1.x, traj.c1.y);
+  ctx.lineTo(traj.c2.x, traj.c2.y);
+  ctx.strokeStyle = COLOR_TRAJ2;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  drawHitMarker(traj.c2.x, traj.c2.y, COLOR_TRAJ2);
 
-    drawHitMarker(traj.c2.x, traj.c2.y, COLOR_TRAJ2);
-
-    // 2쿠션 → 3쿠션
-    ctx.beginPath();
-    ctx.moveTo(traj.c2.x, traj.c2.y);
-    ctx.lineTo(traj.c3.x, traj.c3.y);
-    ctx.strokeStyle = '#ff6666';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    drawHitMarker(traj.c3.x, traj.c3.y, '#ff6666');
-  }
+  // 2쿠션 → 3쿠션
+  ctx.beginPath();
+  ctx.moveTo(traj.c2.x, traj.c2.y);
+  ctx.lineTo(traj.c3.x, traj.c3.y);
+  ctx.strokeStyle = COLOR_TRAJ3;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  drawHitMarker(traj.c3.x, traj.c3.y, COLOR_TRAJ3);
 }
 
 function drawHitMarker(x, y, color) {
@@ -601,12 +552,10 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function clamp(val, min, max) {
-  return Math.max(min, Math.min(max, val));
-}
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
 // ============================================================
-//  메인 렌더 루프
+//  렌더 루프
 // ============================================================
 
 function render() {
@@ -616,19 +565,18 @@ function render() {
   drawTable();
 
   // 2. 포인트 표시
-  // 수구 포인트 (하단 + 좌측)
-  for (const p of cuePoints) {
-    const isOnBottom = Math.abs(p.y - (OY + TABLE_H)) < 1;
-    const isOnLeft   = Math.abs(p.x - OX) < 1;
-    const side = isOnBottom ? 'below' : (isOnLeft ? 'left' : 'below');
-    drawPoints([p], '#88ccff', side);
-  }
-  // 1쿠션 포인트 (상단)
-  drawPoints(firstCushionTop, '#ffcc44', 'above');
-  // 3쿠션 포인트 (우측)
-  drawPoints(thirdCushionRight, '#ff8888', 'right');
+  // 수구 포인트 — 우측 장쿠션 (라벨: 오른쪽)
+  drawPointSet(cuePointsRight, '#88ccff', 'right');
+  // 수구 연장 — 하단 단쿠션 (라벨: 아래), 50은 이미 표시되므로 60부터
+  drawPointSet(cuePointsBottom.slice(1), '#88ccff', 'below');
 
-  // 3. 겨냥선 및 궤적 계산
+  // 1쿠션 포인트 — 상단 단쿠션 (라벨: 위)
+  drawPointSet(firstCushionPoints, '#ffcc44', 'above');
+
+  // 3쿠션 포인트 — 하단 단쿠션 (라벨: 아래)
+  drawPointSet(thirdCushionPoints, '#ff8888', 'below');
+
+  // 3. 계산 및 궤적
   const c1Hit = calcFirstCushionHit(cueBall.x, cueBall.y, mousePos.x, mousePos.y);
 
   if (c1Hit && c1Hit.edge === 'top') {
@@ -637,27 +585,24 @@ function render() {
 
     if (c1Val !== null) {
       const traj = calcTrajectory(cueVal, c1Hit, c1Val);
-
-      // 궤적 그리기
       drawTrajectory(traj);
 
-      // UI 업데이트
+      // UI
       document.getElementById('val-cue').textContent = cueVal.toFixed(1);
       document.getElementById('val-c1').textContent = c1Val.toFixed(1);
-      if (traj) {
-        document.getElementById('val-c3').textContent = traj.c3Val.toFixed(1);
-        document.getElementById('val-formula').textContent =
-          `${cueVal.toFixed(1)} - ${c1Val.toFixed(1)} = ${traj.c3Val.toFixed(1)}`;
-      }
+      const c3ValDisplay = traj ? traj.c3Val.toFixed(1) : '-';
+      document.getElementById('val-c3').textContent = c3ValDisplay + (traj && traj.outOfRange ? ' (범위 초과)' : '');
+      document.getElementById('val-formula').textContent =
+        `${cueVal.toFixed(1)} - ${c1Val.toFixed(1)} = ${c3ValDisplay}`;
     } else {
       drawAimLine(c1Hit);
     }
   } else {
-    // 상단 쿠션이 아닌 경우 겨냥선만 표시
     drawAimLine(c1Hit);
+    document.getElementById('val-cue').textContent = '-';
     document.getElementById('val-c1').textContent = '-';
     document.getElementById('val-c3').textContent = '-';
-    document.getElementById('val-formula').textContent = '수구 - 1쿠션 = 3쿠션';
+    document.getElementById('val-formula').textContent = '상단 쿠션을 겨냥하세요';
   }
 
   // 4. 수구
@@ -667,24 +612,20 @@ function render() {
 }
 
 // ============================================================
-//  마우스 이벤트 처리
+//  마우스 이벤트
 // ============================================================
 
 function getMousePos(e) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
   return {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
+    x: (e.clientX - rect.left) * (canvas.width / rect.width),
+    y: (e.clientY - rect.top) * (canvas.height / rect.height)
   };
 }
 
 canvas.addEventListener('mousedown', (e) => {
   const pos = getMousePos(e);
-  const dist = Math.hypot(pos.x - cueBall.x, pos.y - cueBall.y);
-
-  if (dist <= BALL_R + 5) {
+  if (Math.hypot(pos.x - cueBall.x, pos.y - cueBall.y) <= BALL_R + 5) {
     isDragging = true;
     canvas.style.cursor = 'grabbing';
   }
@@ -692,47 +633,33 @@ canvas.addEventListener('mousedown', (e) => {
 
 canvas.addEventListener('mousemove', (e) => {
   const pos = getMousePos(e);
-
   if (isDragging) {
-    // 수구 이동 (테이블 내부로 제한)
     cueBall.x = clamp(pos.x, OX + BALL_R, OX + TABLE_W - BALL_R);
     cueBall.y = clamp(pos.y, OY + BALL_R, OY + TABLE_H - BALL_R);
   }
-
-  if (!aimLocked) {
-    mousePos = pos;
-  }
-
-  // 커서 스타일
+  if (!aimLocked) mousePos = pos;
   if (!isDragging) {
-    const dist = Math.hypot(pos.x - cueBall.x, pos.y - cueBall.y);
-    canvas.style.cursor = dist <= BALL_R + 5 ? 'grab' : 'crosshair';
+    canvas.style.cursor = Math.hypot(pos.x - cueBall.x, pos.y - cueBall.y) <= BALL_R + 5 ? 'grab' : 'crosshair';
   }
 });
 
 canvas.addEventListener('mouseup', () => {
-  if (isDragging) {
-    isDragging = false;
-    canvas.style.cursor = 'crosshair';
-  }
+  isDragging = false;
+  canvas.style.cursor = 'crosshair';
 });
 
 canvas.addEventListener('click', (e) => {
   const pos = getMousePos(e);
-  const dist = Math.hypot(pos.x - cueBall.x, pos.y - cueBall.y);
-  if (dist > BALL_R + 5) {
+  if (Math.hypot(pos.x - cueBall.x, pos.y - cueBall.y) > BALL_R + 5) {
     aimLocked = !aimLocked;
   }
 });
 
-canvas.addEventListener('mouseleave', () => {
-  isDragging = false;
-});
+canvas.addEventListener('mouseleave', () => { isDragging = false; });
 
 // ============================================================
 //  시작
 // ============================================================
-
 render();
 </script>
 </body>
