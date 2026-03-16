@@ -456,9 +456,8 @@ function startSim(){
 
   ball.vx=ndx*power; ball.vy=ndy*power;
 
-  // 스핀 부여
-  const ss=dir==='left'?-1:1;
-  ball.sx = tipX * ss;           // 좌우 사이드스핀
+  // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
+  ball.sx = tipX;                // 좌우 사이드스핀 (방향 그대로)
   ball.sy = tipY * power * 0.15; // 상하 전후진 스핀 (파워에 비례)
 
   ghost={x:ball.x,y:ball.y};
@@ -615,7 +614,7 @@ function render(){
           if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
             const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
           const ss=dir==='left'?-1:1;
-          ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,tipX*ss,tipY*power*0.15);
+          ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,tipX,tipY*power*0.15);
           drawPP(ppPath);
         }
       }else{drawAim(c1h);resetInfo();}
