@@ -106,18 +106,19 @@ const TR={x:OX+TW,y:OY},TL={x:OX,y:OY};
 const BR={x:OX+TW,y:OY+TH},BL={x:OX,y:OY+TH};
 const R=10;
 
-// --- 물리 상수 ---
-// 설계 원칙: 스핀 0 → 순수 기하 반사, 10:30 3팁 → 5&half 공식 일치
+// --- 물리 상수 (SLDT 데이터 역산) ---
+// 기준 샷: 0→17, c1=17.4
+// 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
   mu_felt:      0.0015,   // 바닥 마찰
-  mu_cushion:   0.07,     // 쿠션 마찰 (스핀→접선)
-  restitution:  0.88,     // 쿠션 법선 반발 (접선은 1.0 = 손실 없음)
-  spinX_decay:  0.30,     // 사이드스핀 쿠션 감쇠 (30%/hit) — 기준: c2≈11, c3≈5.8
-  spinY_decay:  0.20,     // 전후진 스핀 쿠션 감쇠
-  spinY_accel:  0.0004,   // spinY → 속도 가감속 (Follow/Draw)
-  spinX_curve:  0.00008,  // spinX → 수평 커브
+  mu_cushion:   0.048,    // 쿠션 마찰 — 정회전 c2 shift +0.7 맞추기
+  restitution:  0.88,     // 쿠션 법선 반발
+  spinX_decay:  0.25,     // 사이드스핀 감쇠 — 3쿠션까지 적정 잔량
+  spinY_decay:  0.20,     // 전후진 스핀 감쇠
+  spinY_accel:  0.0003,   // spinY → Follow/Draw 가감속
+  spinX_curve:  0.00006,  // spinX → 커브 (미세)
   squirt:       0.005,    // 스쿼트
-  reverse_grip: 1.8,      // 리버스 그립 배율
+  reverse_grip: 1.5,      // 리버스 그립 — 역회전 c3=5.0 (무회전 대비 -1.7)
   min_spd:      0.10,
 };
 
