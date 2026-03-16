@@ -111,14 +111,14 @@ const R=10;
 // 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
   mu_felt:      0.0015,   // 바닥 마찰
-  mu_cushion:   0.058,    // 쿠션 마찰 — 정회전 c2=11.0 맞추기
-  restitution:  0.88,     // 쿠션 법선 반발
+  mu_cushion:   0.07,     // 쿠션 마찰 — 정회전 c2 +0.7 shift
+  restitution:  0.92,     // 쿠션 법선 반발 — c3 기하 보정 (0.88→0.92)
   spinX_decay:  0.22,     // 사이드스핀 감쇠
   spinY_decay:  0.20,     // 전후진 스핀 감쇠
   spinY_accel:  0.0003,   // spinY → Follow/Draw 가감속
   spinX_curve:  0.00005,  // spinX → 커브 (미세)
   squirt:       0.005,    // 스쿼트
-  reverse_grip: 1.15,     // 리버스 그립 — SLDT: 역회전 c2=10.6 (무회전보다 높음)
+  reverse_grip: 1.0,      // 리버스 그립 — SLDT 기준 역회전도 c2>무회전
   min_spd:      0.10,
 };
 
