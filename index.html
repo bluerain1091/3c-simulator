@@ -117,6 +117,7 @@ const P = {
   spinY_felt_couple:0.0006,// spinY → 속도 전달율 (바닥마찰)
   spinX_curve:0.00012,  // spinX → 커브 (바닥 마찰)
   squirt:     0.007,    // 스쿼트
+  reverse_grip:1.8,     // 리버스 English 그립 배율 (러닝 대비)
   min_spd:    0.12,
   spinY_to_vn:0.08,     // spinY가 쿠션 반사 법선에 미치는 영향
 };
@@ -331,18 +332,30 @@ function cushionBounce(b, edge){
   // 법선 반사 + 반발
   vn = -vn * P.restitution;
 
-  // spinY가 법선 반사에 미치는 영향:
-  // Follow → 법선 방향 속도 약간 증가 (공이 더 튕김)
-  // Draw → 법선 방향 속도 약간 감소
+  // spinY → 법선 영향 (Follow=더 튕김, Draw=덜 튕김)
   vn += b.sy * P.spinY_to_vn * Math.sign(vn);
 
-  // spinX → 접선 방향 (쿠션 마찰)
+  // ★ spinX → 접선 방향 (Running vs Reverse 비대칭)
+  //
+  // Running English: 스핀이 접선 이동방향과 같음 → 궤적 확장
+  // Reverse English: 스핀이 접선 이동방향 반대 → 쿠션 그립 → 궤적 축소
+  //
+  // 리버스는 쿠션 고무를 움켜쥐는 효과로 러닝보다 1.8배 강한 영향
   const sxSign=(edge==='top'||edge==='right')?1:-1;
-  vt += P.mu_cushion * b.sx * impF * sxSign;
+  const spinForce = P.mu_cushion * b.sx * impF * sxSign;
+  const isReverse = (spinForce * vt < 0); // 스핀이 진행방향 반대 = 리버스
+  const gripMult = isReverse ? P.reverse_grip : 1.0;
+  vt += spinForce * gripMult;
 
-  // spinX 감쇠 (입사각 의존)
+  // 리버스 시 법선 속도도 약간 감소 (쿠션에 에너지 흡수)
+  if(isReverse){
+    vn *= (1 - Math.abs(b.sx) * 0.015);
+  }
+
+  // spinX 감쇠 (입사각 의존 + 리버스 시 더 많이 소모)
   const dxRate = P.spinX_decay_base + P.spinX_decay_ang * Math.cos(theta);
-  b.sx *= (1 - dxRate);
+  const reverseDecayBonus = isReverse ? 0.15 : 0;
+  b.sx *= (1 - dxRate - reverseDecayBonus);
 
   // spinY 감쇠 (쿠션 접촉 시)
   b.sy *= (1 - P.spinY_decay_cush);
