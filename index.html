@@ -484,6 +484,24 @@ function drawTable(){
   X.fillStyle='#1b7a30';X.fillRect(OX,OY,TW,TH);
   X.strokeStyle='#1a6b28';X.lineWidth=.5;
   X.beginPath();X.moveTo(OX+TW/2,OY);X.lineTo(OX+TW/2,OY+TH);X.stroke();
+
+  // 쿠션 날 10등분 눈금 (다이아몬드 사이를 10칸으로)
+  const tickL=4; // 눈금 길이
+  X.strokeStyle='rgba(255,255,255,.18)';X.lineWidth=0.5;
+  // 상단/하단 장축: 8다이아몬드 × 10 = 80칸
+  for(let i=0;i<=80;i++){
+    const x=OX+(TW/80)*i;
+    const h=(i%10===0)?tickL*2:(i%5===0)?tickL*1.4:tickL;
+    X.beginPath();X.moveTo(x,OY);X.lineTo(x,OY+h);X.stroke();          // 상단 안쪽
+    X.beginPath();X.moveTo(x,OY+TH);X.lineTo(x,OY+TH-h);X.stroke();   // 하단 안쪽
+  }
+  // 좌측/우측 단축: 4다이아몬드 × 10 = 40칸
+  for(let i=0;i<=40;i++){
+    const y=OY+(TH/40)*i;
+    const h=(i%10===0)?tickL*2:(i%5===0)?tickL*1.4:tickL;
+    X.beginPath();X.moveTo(OX,y);X.lineTo(OX+h,y);X.stroke();          // 좌측 안쪽
+    X.beginPath();X.moveTo(OX+TW,y);X.lineTo(OX+TW-h,y);X.stroke();   // 우측 안쪽
+  }
   // 레일 다이아몬드 마커 + 번호 (시계방향 0~23, 우하=0)
   X.fillStyle='#f0e6c0';
   const ryT=PD+RL/2, ryB=OY+TH+CU+RL/2, rxL=PD+RL/2, rxR=OX+TW+CU+RL/2;
