@@ -480,17 +480,44 @@ function drawTable(){
   X.fillStyle='#1b7a30';X.fillRect(OX,OY,TW,TH);
   X.strokeStyle='#1a6b28';X.lineWidth=.5;
   X.beginPath();X.moveTo(OX+TW/2,OY);X.lineTo(OX+TW/2,OY+TH);X.stroke();
-  // 레일 다이아몬드 마커 (코너 포함)
+  // 레일 다이아몬드 마커 (코너 포함) + 번호
   X.fillStyle='#f0e6c0';
   const ryT=PD+RL/2, ryB=OY+TH+CU+RL/2, rxL=PD+RL/2, rxR=OX+TW+CU+RL/2;
-  // 상단/하단 장쿠션: 0~8 (코너 포함 = 9개)
-  for(let i=0;i<=8;i++){const x=OX+(TW/8)*i;dm(x,ryT);dm(x,ryB);}
-  // 좌측/우측 단쿠션: 0~4 (코너 포함 = 5개)
-  for(let i=0;i<=4;i++){const y=OY+(TH/4)*i;dm(rxL,y);dm(rxR,y);}
+  const oT=PD-4, oB=OY+TH+(CU+RL)+8, oL=PD-8, oR=OX+TW+(CU+RL)+8;
+  X.font='bold 9px sans-serif';X.textAlign='center';X.textBaseline='middle';
+
+  // 모든 포인트를 시계방향 순번으로: 우하코너(0)부터
+  // 하단 장쿠션 우→좌: 0~8
+  let n=0;
+  for(let i=0;i<=8;i++){
+    const x=OX+TW-i*(TW/8);
+    dm(x,ryB);
+    X.fillStyle='rgba(255,200,100,.8)';X.fillText(n,x,oB);
+    X.fillStyle='#f0e6c0';n++;
+  }
+  // 좌측 단쿠션 하→상 (코너 제외): 9~12
+  for(let i=1;i<=3;i++){
+    const y=OY+TH-i*(TH/4);
+    dm(rxL,y);
+    X.fillStyle='rgba(255,200,100,.8)';X.fillText(n,oL,y);
+    X.fillStyle='#f0e6c0';n++;
+  }
+  // 상단 장쿠션 좌→우: 13~21
+  for(let i=0;i<=8;i++){
+    const x=OX+i*(TW/8);
+    dm(x,ryT);
+    X.fillStyle='rgba(255,200,100,.8)';X.fillText(n,x,oT);
+    X.fillStyle='#f0e6c0';n++;
+  }
+  // 우측 단쿠션 상→하 (코너 제외): 22~24
+  for(let i=1;i<=3;i++){
+    const y=OY+i*(TH/4);
+    dm(rxR,y);
+    X.fillStyle='rgba(255,200,100,.8)';X.fillText(n,oR,y);
+    X.fillStyle='#f0e6c0';n++;
+  }
 }
 function dm(x,y){const s=3;X.beginPath();X.moveTo(x,y-s);X.lineTo(x+s,y);X.lineTo(x,y+s);X.lineTo(x-s,y);X.closePath();X.fill();}
-
-// 쿠션 날 위 점 제거됨 — 레일 다이아몬드만 사용
 
 function drawBall(x,y,showTip){
   X.beginPath();X.arc(x+2,y+2,R,0,Math.PI*2);X.fillStyle='rgba(0,0,0,.3)';X.fill();
