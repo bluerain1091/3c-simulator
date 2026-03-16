@@ -110,7 +110,7 @@ const R=10;
 // 기준 샷: 0→17, c1=17.4
 // 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
-  mu_felt:      0.004,    // 바닥 마찰 (강화 — 적정 시간 내 정지)
+  mu_felt:      0.00275,  // 바닥 마찰 — 파워14=9쿠션, 파워7=5쿠션
   mu_cushion:   0.20,     // 쿠션 마찰 (스핀→접선)
   restitution:  0.882,    // 쿠션 법선 반발
   spinX_decay:  0.10,     // 사이드스핀 감쇠 (오래 유지)
@@ -725,7 +725,7 @@ function render(){
     stepAllBalls();
     trail.push({x:ball.x,y:ball.y,a:1});
     if(allStopped())stopSim();
-    if(bounces>=9)stopSim();
+    // 마찰로 자연 정지 (파워14 → 최대 9쿠션)
     const sys=curDir==='left'?SL:SR;
     if(predTraj)drawTraj(predTraj,.2);
     drawTrail();
