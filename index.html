@@ -111,14 +111,14 @@ const R=10;
 // 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
   mu_felt:      0.0015,   // 바닥 마찰
-  mu_cushion:   0.16,     // 쿠션 마찰 — 정회전 c2 shift +0.7 필요 (3.5배↑)
+  mu_cushion:   0.10,     // 쿠션 마찰 (사이드 스핀→접선)
   restitution:  0.92,     // 쿠션 법선 반발
   spinX_decay:  0.22,     // 사이드스핀 감쇠
-  spinY_decay:  0.20,     // 전후진 스핀 감쇠
-  spinY_accel:  0.001,    // spinY → Follow/Draw (3배↑)
+  spinY_decay:  0.15,     // 전후진 스핀 감쇠 (더 오래 유지)
+  spinY_accel:  0.003,    // spinY → Follow/Draw (팔로우 지배적)
   spinX_curve:  0.00005,  // spinX → 커브
   squirt:       0.005,    // 스쿼트
-  reverse_grip: 1.0,      // 리버스 그립
+  reverse_grip: 1.0,      // 리버스 그립 (대칭)
   min_spd:      0.10,
 };
 
@@ -369,13 +369,13 @@ function physicsStep(b){
   const f=1-P.mu_felt;
   b.vx*=f; b.vy*=f;
 
-  // spinY → Follow/Draw (속도 가감속)
-  if(spd>0.3){
+  // spinY → Follow/Draw (속도 가감속) — tipY=0이면 적용 안함
+  if(Math.abs(b.sy)>0.05 && spd>0.3){
     const natSpin=spd*0.1;
     const accel=(b.sy-natSpin)*P.spinY_accel;
     b.vx+=(b.vx/spd)*accel;
     b.vy+=(b.vy/spd)*accel;
-    b.sy+=(natSpin-b.sy)*0.012; // spinY → 자연회전에 수렴
+    b.sy+=(natSpin-b.sy)*0.008; // spinY → 자연회전에 수렴 (느리게)
   }
 
   // spinX → 커브
@@ -401,8 +401,8 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    if(spd>.3){const ns=spd*0.1,a=(g.sy-ns)*P.spinY_accel;
-      g.vx+=(g.vx/spd)*a;g.vy+=(g.vy/spd)*a;g.sy+=(ns-g.sy)*0.012;}
+    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,a=(g.sy-ns)*P.spinY_accel;
+      g.vx+=(g.vx/spd)*a;g.vy+=(g.vy/spd)*a;g.sy+=(ns-g.sy)*0.008;}
     g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
