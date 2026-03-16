@@ -725,7 +725,7 @@ function render(){
     stepAllBalls();
     trail.push({x:ball.x,y:ball.y,a:1});
     if(allStopped())stopSim();
-    if(bounces>=30)stopSim();
+    if(bounces>=9)stopSim();
     const sys=curDir==='left'?SL:SR;
     if(predTraj)drawTraj(predTraj,.2);
     drawTrail();
