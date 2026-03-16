@@ -539,7 +539,17 @@ function dPts(pts,col,a){
   for(const p of pts){X.beginPath();X.arc(p.x,p.y,2.5,0,Math.PI*2);X.fillStyle=col;X.fill();}
   X.globalAlpha=1;
 }
-function drawPts(s,a){dPts(s.c1,'#ffcc44',a);dPts(s.c3,'#ff8888',a);
+function drawCorners(a){
+  X.globalAlpha=a||1;
+  const corners=[TR,TL,BR,BL];
+  for(const c of corners){
+    X.beginPath();X.arc(c.x,c.y,4.5,0,Math.PI*2);
+    X.fillStyle='rgba(255,255,255,.5)';X.fill();
+    X.strokeStyle='rgba(255,255,255,.7)';X.lineWidth=1;X.stroke();
+  }
+  X.globalAlpha=1;
+}
+function drawPts(s,a){drawCorners(a);dPts(s.c1,'#ffcc44',a);dPts(s.c3,'#ff8888',a);
   dPts(s.cs,'#88ccff',a);dPts(s.cl.slice(1),'#88ccff',a);}
 
 function drawBall(x,y,showTip){
