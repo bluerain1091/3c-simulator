@@ -388,18 +388,19 @@ function physicsStep(b){
   b.vx*=f; b.vy*=f;
 
   // spinY → Follow/Draw
-  // Follow: 전진회전이 바닥 마찰을 통해 공을 밀어줌 (실제 가속 허용)
-  // Draw: 역회전이 공을 감속/정지
+  // Follow: 마찰 감속을 완화 (덜 느려짐) — 절대 가속 아님
+  // Draw: 추가 감속 (더 빨리 멈춤)
   if(Math.abs(b.sy)>0.05 && spd>0.3){
     const natSpin=spd*0.1;
     const spinDiff=b.sy-natSpin;
-    // Follow(spinDiff>0): 전진력 발생 — 공이 목적구 방향으로 밀려감
-    // Draw(spinDiff<0): 감속력 발생
-    const accel=spinDiff*P.spinY_accel;
-    b.vx+=(b.vx/spd)*accel;
-    b.vy+=(b.vy/spd)*accel;
-    // spinY 수렴 (바닥 마찰이 서서히 전달)
-    b.sy+=(natSpin-b.sy)*0.012;
+    const raw=spinDiff*P.spinY_accel;
+    // Follow: 마찰의 80%까지만 상쇄 (공은 항상 감속)
+    // Draw: 추가 감속 허용
+    const frictionAmt=P.mu_felt*spd;
+    const clamped=Math.max(Math.min(raw, frictionAmt*0.8), -frictionAmt*2);
+    b.vx+=(b.vx/spd)*clamped;
+    b.vy+=(b.vy/spd)*clamped;
+    b.sy+=(natSpin-b.sy)*0.025; // 빠르게 자연회전에 수렴
   }
 
   // spinX → 커브
@@ -479,8 +480,9 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,a=(g.sy-ns)*P.spinY_accel;
-      g.vx+=(g.vx/spd)*a;g.vy+=(g.vy/spd)*a;g.sy+=(ns-g.sy)*0.012;}
+    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,raw=(g.sy-ns)*P.spinY_accel;
+      const fa=P.mu_felt*spd,c=Math.max(Math.min(raw,fa*0.8),-fa*2);
+      g.vx+=(g.vx/spd)*c;g.vy+=(g.vy/spd)*c;g.sy+=(ns-g.sy)*0.025;}
     g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
