@@ -381,7 +381,11 @@ function cushionBounce(b, edge){
  */
 function physicsStep(b){
   const spd=Math.hypot(b.vx,b.vy);
-  if(spd<P.min_spd&&Math.abs(b.sy)<0.5)return false;
+  if(spd<P.min_spd){
+    if(Math.abs(b.sy)>0.1)b.sy*=0.8; // 정지 시 잔여 스핀 감쇠
+    if(Math.abs(b.sy)<2&&spd<0.05){b.sy=0;b.sx=0;b.vx=0;b.vy=0;return false;}
+    if(Math.abs(b.sy)<0.5)return false;
+  }
 
   // 바닥 마찰
   const f=1-P.mu_felt;
@@ -399,9 +403,9 @@ function physicsStep(b){
       // 슬라이딩: 마찰이 속도↔회전을 동시에 자연 롤링으로 수렴
       const coupling = 0.025;
       const velDelta = diff * coupling;
-      // 속도 변화 캡: 한 프레임에 최대 0.5px/frame 변화 (폭주 방지)
-      const maxDelta = 0.5;
-      const clamped = Math.max(-maxDelta, Math.min(maxDelta, velDelta));
+      // Follow: 슬라이딩 가속 허용 (충돌 후 전진), 캡 0.15
+      // Draw: 감속, 캡 -0.3
+      const clamped = Math.max(-0.3, Math.min(0.15, velDelta));
       b.vx += (b.vx / Math.max(spd, 0.1)) * clamped;
       b.vy += (b.vy / Math.max(spd, 0.1)) * clamped;
       // 회전도 반대로 수렴
@@ -514,7 +518,7 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
     if(Math.abs(g.sy)>0.1&&spd>0.05){
       const ns=spd*15,d=g.sy-ns;
       if(Math.abs(d)>0.5){
-        const cd=Math.max(-0.5,Math.min(0.5,d*0.025));
+        const cd=Math.max(-0.3,Math.min(0.15,d*0.025));
         g.vx+=(g.vx/Math.max(spd,0.1))*cd;
         g.vy+=(g.vy/Math.max(spd,0.1))*cd;
         g.sy-=d*0.02;
