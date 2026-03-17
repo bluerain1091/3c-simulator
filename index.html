@@ -106,22 +106,24 @@ const TR={x:OX+TW,y:OY},TL={x:OX,y:OY};
 const BR={x:OX+TW,y:OY+TH},BL={x:OX,y:OY+TH};
 const R=10;
 
-// --- 물리 상수 (SLDT 데이터 역산) ---
-// 기준 샷: 0→17, c1=17.4
-// 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
+// --- 실제 물리 상수 (SI 단위) ---
 const P = {
-  mu_felt:      0.0023,   // 바닥 마찰 — rest=0.80 + 파워14=9쿠션
-  mu_cushion:   0.148,    // 쿠션 마찰 (스핀→접선)
-  restitution:  0.80,     // 쿠션 반발 (낮춰서 적정 정지)
-  spinX_decay:  0.16,     // 사이드스핀 감쇠
-  spinY_decay:  0.16,     // 전후진 스핀 감쇠
-  spinY_accel:  0.30,     // spinY → Follow/Draw (커플링 강도)
-  spinX_curve:  0.00005,  // spinX → 커브
-  squirt:       0.005,    // 스쿼트
-  reverse_grip1:0.025,    // 리버스 그립 — 첫 쿠션
-  reverse_grip2:0.958,    // 리버스 그립 — 이후 쿠션
-  min_spd:      0.3,     // 정지 판정 (높여서 빠르게 멈춤)
+  R: 0.03275,         // 공 반지름 (m)
+  g: 9.8,             // 중력
+  mu_s: 0.2,          // 바닥 슬라이딩 마찰
+  mu_r: 0.01,         // 바닥 구름 마찰
+  mu_sp: 0.044,       // 스피닝 마찰
+  mu_ball: 0.06,      // 공끼리 마찰 (throw)
+  e_cush: 0.80,       // 쿠션 반발 (pw7=5cush, pw14=9cush)
+  mu_cush: 0.2,       // 쿠션 마찰
+  TBL_W: 2.84,        // 테이블 (m)
+  TBL_H: 1.42,
+  SLIP_EPS: 1e-3,
+  ROLL_EPS: 1e-3,
+  SPIN_EPS: 0.1,
 };
+const PXM = TW / P.TBL_W; // 281.69 px/m
+const DT = 1/300; // 5substeps × 60fps
 
 // --- 당점 ---
 let tipX = -2.0;  // -4 ~ +4 (좌우) — 기본 10:30 = 왼쪽 상단
@@ -144,7 +146,12 @@ const initBalls=[
   {x:pt2x(16),   y:pt2y(12.5), col1:'#ffe040',col2:'#cc9900',name:'1적구'},
   {x:OX+TW-25,   y:OY+25,      col1:'#ff4444',col2:'#aa0000',name:'2적구'},
 ];
-const balls=initBalls.map(b=>({...b,vx:0,vy:0,sx:0,sy:0,bn:0}));
+const balls=initBalls.map(b=>({...b,
+  vx:0,vy:0,sx:0,sy:0,bn:0,
+  // SI 필드
+  r:[(b.x-OX)/PXM, (b.y-OY)/PXM],
+  v:[0,0], w:[0,0,0], // w=[wx,wy,wz]
+}));
 const ball=balls[0]; // 수구 참조
 let ghost={x:ball.x,y:ball.y};
 let trail=[],bounces=0,predTraj=null,ppPath=null;
@@ -328,220 +335,154 @@ function calcTraj(cv_,c1h,c1v,s){
 }
 
 // ============================================================
-//  물리 엔진 — 3D 회전
+//  물리 엔진 — SI 단위 슬립 속도 모델 (pooltool/Mathavan 기반)
+//
+//  슬라이딩: dv/dt = -μs·g·û, dω/dt = (5μsg)/(2R)·(k×û)
+//  롤링:    dv/dt = -μr·g·v̂, ω = v/R
+//  슬립속도: u = v + R·(k×ω) → ux = vx - R·wy, uy = vy + R·wx
 // ============================================================
 
-/**
- * 쿠션 충돌 — 단순화된 정확한 모델
- *
- * 1. 법선: 반발계수로 반사 (접선 손실 없음)
- * 2. spinX: 쿠션 마찰을 통해 접선 방향 힘 추가
- *    - Running: 접선 방향과 같음 → 궤적 확장 (×1.0)
- *    - Reverse: 접선 방향 반대 → 궤적 축소 (×1.8)
- * 3. spinY: 이 단계에서는 영향 없음 (바닥에서만 작용)
- */
-function cushionBounce(b, edge){
+function slipVel(b){
+  return[b.v[0]-P.R*b.w[1], b.v[1]+P.R*b.w[0]];
+}
+
+function cushionBounceSI(b, edge){
   const hz=(edge==='top'||edge==='bottom');
-  let vn=hz?b.vy:b.vx;
-  let vt=hz?b.vx:b.vy;
-
-  const impF=Math.abs(vn);
-
-  // 법선 반사
-  vn = -vn * P.restitution;
-
-  // spinX → 접선 (쿠션 고무 마찰)
-  const sxSign=(edge==='top'||edge==='right')?-1:1;
-  const spinForce = P.mu_cushion * b.sx * impF * sxSign;
-  const isReverse = (spinForce * vt < 0);
-  const grip = isReverse ? (b.bn===0 ? P.reverse_grip1 : P.reverse_grip2) : 1.0;
-  vt += spinForce * grip;
-  b.bn = (b.bn||0) + 1;
-
-  // ★ 쿠션 마찰에 의한 자연 회전 발생
-  // 무회전 공이라도 쿠션에 닿으면 접선 슬라이딩으로 spinX가 생김
-  // 접선 속도 방향과 반대로 회전 발생 (쿠션 고무가 공을 잡음)
-  const naturalSpin = -vt * 0.015 * sxSign;
-  b.sx += naturalSpin;
-
-  // 스핀 감쇠
-  b.sx *= (1 - P.spinX_decay);
-  b.sy *= (1 - P.spinY_decay);
-
-  if(hz){b.vy=vn;b.vx=vt;}else{b.vx=vn;b.vy=vt;}
+  let vn=hz?b.v[1]:b.v[0], vt=hz?b.v[0]:b.v[1];
+  const impN=Math.abs(vn);
+  vn=-vn*P.e_cush;
+  // 사이드스핀(wz) → 접선
+  const sSign=(edge==='top'||edge==='right')?-1:1;
+  const cushSlip=vt+P.R*b.w[2]*sSign;
+  const maxF=P.mu_cush*impN;
+  if(Math.abs(cushSlip)>0.001){
+    const frc=Math.min(maxF,Math.abs(cushSlip));
+    vt-=frc*Math.sign(cushSlip);
+    b.w[2]+=(frc*sSign)/P.R*0.4;
+  }
+  // ★ 법선 방향 스핀도 반전 (롤링→슬라이딩 재진입 방지)
+  if(hz){b.v[1]=vn;b.v[0]=vt;b.w[0]=-b.v[1]/P.R;}
+  else{b.v[0]=vn;b.v[1]=vt;b.w[1]=b.v[0]/P.R;}
+  b.bn=(b.bn||0)+1;
 }
 
-/**
- * 물리 스텝 — spinY(전후진) 통합
- *
- * 자연 회전속도: ω_natural = v / R
- * spinY > ω_natural → 마찰이 공을 가속 (Follow)
- * spinY < 0 → 마찰이 공을 감속/역전 (Draw)
- * spinY는 점진적으로 자연 회전속도에 수렴
- */
-function physicsStep(b){
-  const spd=Math.hypot(b.vx,b.vy);
-  if(spd<P.min_spd){
-    if(Math.abs(b.sy)>0.1)b.sy*=0.8; // 정지 시 잔여 스핀 감쇠
-    if(Math.abs(b.sy)<2&&spd<0.05){b.sy=0;b.sx=0;b.vx=0;b.vy=0;return false;}
-    if(Math.abs(b.sy)<0.5)return false;
+function physicsStepSI(b){
+  const spd=Math.hypot(b.v[0],b.v[1]);
+  const wM=Math.hypot(b.w[0],b.w[1]);
+  if(spd<P.ROLL_EPS&&wM<P.SPIN_EPS&&Math.abs(b.w[2])<P.SPIN_EPS){
+    b.v[0]=b.v[1]=0;b.w[0]=b.w[1]=b.w[2]=0;return'stop';
   }
-
-  // 바닥 마찰
-  const f=1-P.mu_felt;
-  b.vx*=f; b.vy*=f;
-
-  // 슬립 기반 팔로우/드로우 (실제 물리 단순화)
-  // sy > 0: 팔로우 (속도보다 회전이 빠름 → 마찰이 전진 방향으로)
-  // sy < 0: 드로우 (역회전 → 마찰이 역방향으로)
-  if(b===balls[0] && Math.abs(b.sy) > 0.1 && spd > 0.05) {
-    const natSpin = spd * 15;
-    const diff = b.sy - natSpin;
-
-    if(Math.abs(diff) > 0.5) {
-      const velDelta = diff * 0.025;
-      let clamped;
-      if(b.hitBall && (b.followTimer||0)>0) {
-        // 충돌 후 타이머 내: 팔로우 가속
-        clamped = Math.max(-0.15, Math.min(0.03, velDelta));
-        b.followTimer--;
-      } else {
-        // 충돌 전: 가속 금지, 감속 완화만 (마찰의 90%)
-        const frictionAmt = P.mu_felt * spd;
-        clamped = Math.max(-0.3, Math.min(frictionAmt * 0.9, velDelta));
-      }
-      b.vx += (b.vx / Math.max(spd, 0.1)) * clamped;
-      b.vy += (b.vy / Math.max(spd, 0.1)) * clamped;
-      b.sy -= diff * 0.02; // 수렴
+  const u=slipVel(b), uM=Math.hypot(u[0],u[1]);
+  if(uM>P.SLIP_EPS){
+    // 슬라이딩
+    const uh=[u[0]/uM,u[1]/uM];
+    b.v[0]-=P.mu_s*P.g*uh[0]*DT;
+    b.v[1]-=P.mu_s*P.g*uh[1]*DT;
+    const wA=(5*P.mu_s*P.g)/(2*P.R);
+    b.w[0]+=wA*(-uh[1])*DT;
+    b.w[1]+=wA*(uh[0])*DT;
+    // 슬립 역전 → 롤링 스냅 (크기가 줄어들며 반전된 경우만)
+    const uN=slipVel(b),uNM=Math.hypot(uN[0],uN[1]);
+    if(u[0]*uN[0]+u[1]*uN[1]<0 && uNM<uM*0.5){
+      b.w[1]=b.v[0]/P.R;b.w[0]=-b.v[1]/P.R;
     }
+  }else{
+    // 롤링
+    b.w[1]=b.v[0]/P.R;b.w[0]=-b.v[1]/P.R;
+    if(spd>P.ROLL_EPS){
+      const vh=[b.v[0]/spd,b.v[1]/spd];
+      const drag=P.mu_r*P.g*DT;
+      if(drag>=spd){b.v[0]=b.v[1]=0;b.w[0]=b.w[1]=0;}
+      else{
+        b.v[0]-=drag*vh[0];b.v[1]-=drag*vh[1];
+        // 사이드스핀 커브 (방향만, 속력 보존)
+        if(Math.abs(b.w[2])>P.SPIN_EPS){
+          const ca=P.mu_r*P.g*0.3*b.w[2]*P.R/Math.max(spd,0.01);
+          b.v[0]+=(-vh[1])*ca*DT;b.v[1]+=(vh[0])*ca*DT;
+          const ns=Math.hypot(b.v[0],b.v[1]),s2=spd-drag;
+          if(ns>0.001){const sc=s2/ns;b.v[0]*=sc;b.v[1]*=sc;}
+        }
+        b.w[1]=b.v[0]/P.R;b.w[0]=-b.v[1]/P.R;
+      }
+    }else{b.v[0]=b.v[1]=0;b.w[0]=b.w[1]=0;}
   }
-
-  // 속도 절대 상한 (폭주 방지)
-  const absSpd=Math.hypot(b.vx,b.vy);
-  if(absSpd>14){const sc=14/absSpd;b.vx*=sc;b.vy*=sc;}
-  // 이동
-  b.x+=b.vx; b.y+=b.vy;
-
-  // 쿠션 충돌
-  let bounced=false;
-  if(b.y-R<=OY){b.y=OY+R;cushionBounce(b,'top');bounced=true;}
-  if(b.y+R>=OY+TH){b.y=OY+TH-R;cushionBounce(b,'bottom');bounced=true;}
-  if(b.x-R<=OX){b.x=OX+R;cushionBounce(b,'left');bounced=true;}
-  if(b.x+R>=OX+TW){b.x=OX+TW-R;cushionBounce(b,'right');bounced=true;}
-
-  return bounced;
+  // 사이드스핀 감쇠
+  if(Math.abs(b.w[2])>P.SPIN_EPS){
+    const dw2=(5*P.mu_sp*P.g)/(2*P.R)*DT;
+    if(dw2>Math.abs(b.w[2]))b.w[2]=0;else b.w[2]-=dw2*Math.sign(b.w[2]);
+  }
+  // 위치 업데이트
+  b.r[0]+=b.v[0]*DT;b.r[1]+=b.v[1]*DT;
+  // 쿠션 검사
+  let bo=false;
+  if(b.r[1]-P.R<0){b.r[1]=P.R;cushionBounceSI(b,'bottom');bo=true;}
+  if(b.r[1]+P.R>P.TBL_H){b.r[1]=P.TBL_H-P.R;cushionBounceSI(b,'top');bo=true;}
+  if(b.r[0]-P.R<0){b.r[0]=P.R;cushionBounceSI(b,'left');bo=true;}
+  if(b.r[0]+P.R>P.TBL_W){b.r[0]=P.TBL_W-P.R;cushionBounceSI(b,'right');bo=true;}
+  return bo?'bounce':'ok';
 }
 
-/** 공끼리 탄성 충돌 (같은 질량) */
-function ballCollision(a,b){
-  const dx=b.x-a.x, dy=b.y-a.y;
-  const dist=Math.hypot(dx,dy);
-  if(dist>=R*2||dist<0.01)return false;
-
-  // 겹침 해소 (충분히 밀어냄)
-  const nx=dx/dist, ny=dy/dist;
-  const overlap=R*2-dist+0.5; // 여유분 추가
-  a.x-=nx*overlap/2; a.y-=ny*overlap/2;
-  b.x+=nx*overlap/2; b.y+=ny*overlap/2;
-
-  // 상대 속도
-  const dvx=a.vx-b.vx, dvy=a.vy-b.vy;
-  const dvn=dvx*nx+dvy*ny;
+function ballCollisionSI(a,b){
+  const dx=b.r[0]-a.r[0],dy=b.r[1]-a.r[1],dist=Math.hypot(dx,dy);
+  const D=2*P.R;
+  if(dist>=D||dist<0.0001)return false;
+  const nx=dx/dist,ny=dy/dist;
+  const ov=D-dist+0.0001;
+  a.r[0]-=nx*ov/2;a.r[1]-=ny*ov/2;b.r[0]+=nx*ov/2;b.r[1]+=ny*ov/2;
+  const dvx=a.v[0]-b.v[0],dvy=a.v[1]-b.v[1],dvn=dvx*nx+dvy*ny;
   if(dvn<=0)return false;
-
-  // 같은 질량 탄성 충돌: 법선 성분 교환
-  a.vx-=dvn*nx; a.vy-=dvn*ny;
-  b.vx+=dvn*nx; b.vy+=dvn*ny;
-
-  // 스핀 전달 (약하게)
-  b.sx += -a.sx * 0.05;
-  b.sy += -a.sy * 0.05;
-  // 충돌 시 sy 5% 감소 (에너지 전달)
-  a.sy *= 0.7;
-  // 충돌 플래그 (팔로우 활성화용)
-  a.hitBall = true;
-  a.followTimer = 100; // 팔로우 100프레임 후 종료
+  a.v[0]-=dvn*nx;a.v[1]-=dvn*ny;b.v[0]+=dvn*nx;b.v[1]+=dvn*ny;
+  // Throw (접선 마찰)
+  const tx=-ny,ty=nx,dvt=dvx*tx+dvy*ty;
+  const maxTh=P.mu_ball*Math.abs(dvn);
+  const thr=Math.min(maxTh,Math.abs(dvt))*Math.sign(dvt);
+  a.v[0]-=thr*tx*0.5;a.v[1]-=thr*ty*0.5;
+  b.v[0]+=thr*tx*0.5;b.v[1]+=thr*ty*0.5;
+  // wz 약한 전달
+  b.w[2]+=-a.w[2]*0.05;
   return true;
 }
 
-/** 이동 전 연속 충돌 감지 (CCD) — 터널링 방지 */
-function checkBallCCD(a,b){
-  // a가 이동할 때 b를 관통하는지 미리 체크
-  // a의 이동 벡터와 b 중심 사이 최근접 거리 계산
-  const dx=b.x-a.x, dy=b.y-a.y;
-  const dist=Math.hypot(dx,dy);
-  if(dist<R*2) return true; // 이미 겹침
-  if(Math.hypot(a.vx,a.vy)<0.01) return false;
+/** SI→PX 위치 동기화 */
+function syncPX(){for(const b of balls){b.x=b.r[0]*PXM+OX;b.y=(P.TBL_H-b.r[1])*PXM+OY;}}
+/** PX→SI (드래그 후) */
+function syncSI(){for(const b of balls){b.r[0]=(b.x-OX)/PXM;b.r[1]=P.TBL_H-(b.y-OY)/PXM;}}
 
-  // a의 이동 벡터
-  const mvx=a.vx, mvy=a.vy;
-  const mvLen=Math.hypot(mvx,mvy);
-  if(mvLen<0.1) return false;
-
-  // a→b 벡터를 이동 방향에 투영
-  const t=(dx*mvx+dy*mvy)/(mvLen*mvLen);
-  if(t<0||t>1) return false; // 이동 범위 밖
-
-  // 최근접점에서의 거리
-  const cx=a.x+mvx*t, cy=a.y+mvy*t;
-  const closeDist=Math.hypot(b.x-cx,b.y-cy);
-  if(closeDist<R*2){
-    // 충돌 지점으로 a를 이동시키고 충돌 처리
-    const penetrate=R*2-closeDist;
-    const backT=Math.max(0,t-penetrate/(mvLen+0.1));
-    a.x=a.x+mvx*backT-mvx; // 이동 취소 후 충돌 직전으로
-    a.y=a.y+mvy*backT-mvy;
-    return true;
-  }
-  return false;
-}
-
-/** 모든 공 물리 스텝 */
 function stepAllBalls(){
-  // 각 공 이동
   for(const b of balls){
-    if(Math.hypot(b.vx,b.vy)>=0.05||Math.abs(b.sy)>0.1||Math.abs(b.sx)>0.1) physicsStep(b);
+    const spd=Math.hypot(b.v[0],b.v[1]);
+    if(spd>P.ROLL_EPS||Math.hypot(b.w[0],b.w[1])>P.SPIN_EPS||Math.abs(b.w[2])>P.SPIN_EPS)
+      physicsStepSI(b);
   }
-  // 공끼리 충돌 — 여러 번 체크 (겹침 완전 해소)
-  for(let pass=0;pass<3;pass++){
+  for(let pass=0;pass<3;pass++)
     for(let i=0;i<balls.length;i++)
       for(let j=i+1;j<balls.length;j++)
-        ballCollision(balls[i],balls[j]);
-  }
+        ballCollisionSI(balls[i],balls[j]);
+  syncPX();
 }
 
-/** 모든 공 정지 확인 */
 function allStopped(){
-  return balls.every(b=>Math.hypot(b.vx,b.vy)<P.min_spd);
+  return balls.every(b=>Math.hypot(b.v[0],b.v[1])<P.ROLL_EPS&&Math.abs(b.w[2])<P.SPIN_EPS);
 }
 
 /** 물리 예측 경로 */
-function calcPP(sx,sy,vx,vy,spinX,spinY){
-  const g={x:sx,y:sy,vx,vy,sx:spinX,sy:spinY};
-  const path=[{x:g.x,y:g.y}];let bc=0;
+/** 물리 예측 (SI 기반) */
+function calcPP(startX,startY,v0,v1,w0,w1,w2){
+  // startX,startY는 PX좌표
+  const g={r:[(startX-OX)/PXM, P.TBL_H-(startY-OY)/PXM],
+    v:[v0,v1],w:[w0,w1,w2],bn:0};
+  const path=[{x:startX,y:startY}];let bc=0;
   for(let i=0;i<4000;i++){
-    const spd=Math.hypot(g.vx,g.vy);
-    if(spd<P.min_spd&&Math.abs(g.sy)<0.5)break;
-    g.vx*=(1-P.mu_felt);g.vy*=(1-P.mu_felt);
-    if(Math.abs(g.sy)>0.1&&spd>0.05){
-      const ns=spd*15,d=g.sy-ns;
-      if(Math.abs(d)>0.5){
-        const cd=Math.max(-0.15,Math.min(0.03,d*0.025));
-        g.vx+=(g.vx/Math.max(spd,0.1))*cd;
-        g.vy+=(g.vy/Math.max(spd,0.1))*cd;
-        g.sy-=d*0.02;
-      }
-    }
-    g.x+=g.vx;g.y+=g.vy;
-    let bo=false;
-    if(g.y-R<=OY){g.y=OY+R;cushionBounce(g,'top');bo=true;}
-    if(g.y+R>=OY+TH){g.y=OY+TH-R;cushionBounce(g,'bottom');bo=true;}
-    if(g.x-R<=OX){g.x=OX+R;cushionBounce(g,'left');bo=true;}
-    if(g.x+R>=OX+TW){g.x=OX+TW-R;cushionBounce(g,'right');bo=true;}
-    if(bo){bc++;path.push({x:g.x,y:g.y});}
+    const spd=Math.hypot(g.v[0],g.v[1]);
+    if(spd<P.ROLL_EPS&&Math.hypot(g.w[0],g.w[1])<P.SPIN_EPS)break;
+    physicsStepSI(g);
+    // 쿠션 히트 시 경로 추가
+    const px=g.r[0]*PXM+OX, py=(P.TBL_H-g.r[1])*PXM+OY;
+    if(g.bn>bc){bc=g.bn;path.push({x:px,y:py});}
     if(bc>=4)break;
   }
-  path.push({x:g.x,y:g.y});return path;
+  const fpx=g.r[0]*PXM+OX, fpy=(P.TBL_H-g.r[1])*PXM+OY;
+  path.push({x:fpx,y:fpy});return path;
 }
 
 // ============================================================
@@ -569,26 +510,37 @@ function startSim(){
     if(c1v!==null&&ext.val!==null)predTraj=calcTraj(ext.val,c1h,c1v,sys);
   }
 
-  // 발사 벡터
-  let dx=c1h.x-ball.x,dy=c1h.y-ball.y;
+  // 발사 벡터 (SI)
+  let dx=c1h.x-ball.x, dy=c1h.y-ball.y;
   const len=Math.hypot(dx,dy);
-  let ndx=dx/len,ndy=dy/len;
+  let ndx=dx/len, ndy=dy/len;
 
-  // 스쿼트 (tipX에 의한 편향)
+  // 스쿼트
   if(sqtOn&&tipX!==0){
-    const sq=-tipX*P.squirt*(power/7);
+    const sq=-tipX*0.005*(power/7);
     const cs=Math.cos(sq),sn=Math.sin(sq);
     const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;
   }
 
-  ball.vx=ndx*power; ball.vy=ndy*power;
+  // 파워 → SI 속도 (power 1~14 → ~0.4~6 m/s)
+  const v0 = power * 0.43;
+  // ndx,ndy는 픽셀 방향 → SI에서는 y 반전 (화면 y↓, SI y↑)
+  ball.v[0] = ndx * v0;
+  ball.v[1] = -ndy * v0; // y 반전!
 
-  // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
-  ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
-  ball.sy = tipY * power * 20; // 상하 전후진 스핀 (natSpin=spd*15 기준)
-  ball.bn = 0;                    // 쿠션 카운터 (grip 분리용)
-  ball.hitBall = false;           // 충돌 전/후 팔로우 구분
-  ball.followTimer = 0;
+  // 스핀 (SI: rad/s)
+  // tipX → 사이드스핀(wz): -(5·v0·a)/(2R) where a = tipX/MISCUE_R
+  const a = tipX / MISCUE_R;
+  const bTip = tipY / MISCUE_R;
+  ball.w[2] = -(5 * v0 * a) / (2 * P.R);
+  // tipY → 전후진 스핀: 속도 방향에 따라 wx,wy 분해
+  const theta = Math.atan2(ball.v[1], ball.v[0]);
+  const wFwd = (5 * v0 * bTip) / (2 * P.R);
+  ball.w[0] = -wFwd * Math.sin(theta);
+  ball.w[1] = wFwd * Math.cos(theta);
+
+  ball.bn = 0;
+  syncSI(); // PX→SI 위치 동기화
 
   ghost={x:ball.x,y:ball.y};
   trail=[];bounces=0;st=S.SIM;aimLk=false;
@@ -598,7 +550,8 @@ function startSim(){
 
 function stopSim(){
   st=S.AIM;
-  for(const b of balls){b.vx=0;b.vy=0;b.sx=0;b.sy=0;b.bn=0;}
+  for(const b of balls){b.v=[0,0];b.w=[0,0,0];b.bn=0;}
+  syncPX();
   document.getElementById('shoot').textContent='발사 [Space]';
   document.getElementById('shoot').classList.remove('act');
 }
@@ -606,6 +559,7 @@ function stopSim(){
 function resetBall(){
   stopSim();
   for(let i=0;i<3;i++){balls[i].x=initBalls[i].x;balls[i].y=initBalls[i].y;}
+  syncSI();
   trail=[];predTraj=null;ppPath=null;bounces=0;
 }
 
@@ -890,7 +844,13 @@ function render(){
         let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
         if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
           const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
-        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,-tipX,tipY*power*15);
+        // SI 초기조건으로 물리 예측
+        const pv0=power*0.43;
+        const pa=tipX/MISCUE_R, pb=tipY/MISCUE_R;
+        const pvx=ndx*pv0, pvy=-ndy*pv0;
+        const pwz=-(5*pv0*pa)/(2*P.R);
+        const pth=Math.atan2(pvy,pvx), pwf=(5*pv0*pb)/(2*P.R);
+        ppPath=calcPP(ball.x,ball.y,pvx,pvy,-pwf*Math.sin(pth),pwf*Math.cos(pth),pwz);
         drawPP(ppPath);
       }
     }else{resetInfo();}
@@ -956,7 +916,7 @@ cv.addEventListener('mousemove',e=>{
     cv.style.cursor=hov?'grab':'crosshair';
   }
 });
-cv.addEventListener('mouseup',()=>{dragBall=null;cv.style.cursor='crosshair';});
+cv.addEventListener('mouseup',()=>{dragBall=null;cv.style.cursor='crosshair';syncSI();});
 cv.addEventListener('click',e=>{
   if(st!==S.AIM)return;const p=gm(e);
   const onBall=findBallAt(p);
@@ -969,7 +929,7 @@ cv.addEventListener('touchstart',e=>{e.preventDefault();const p=gm(e.touches[0])
 cv.addEventListener('touchmove',e=>{e.preventDefault();const p=gm(e.touches[0]);
   if(dragBall&&st===S.AIM){dragBall.x=clamp(p.x,OX+R,OX+TW-R);dragBall.y=clamp(p.y,OY+R,OY+TH-R);}
   if(!aimLk)mouse=p;},{passive:false});
-cv.addEventListener('touchend',()=>{dragBall=null;});
+cv.addEventListener('touchend',()=>{dragBall=null;syncSI();});
 
 document.addEventListener('keydown',e=>{
   // 화살표: 0.5팁 조절
