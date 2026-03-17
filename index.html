@@ -390,7 +390,7 @@ function physicsStep(b){
   // 슬립 기반 팔로우/드로우 (실제 물리 단순화)
   // sy > 0: 팔로우 (속도보다 회전이 빠름 → 마찰이 전진 방향으로)
   // sy < 0: 드로우 (역회전 → 마찰이 역방향으로)
-  if(Math.abs(b.sy) > 0.1 && spd > 0.05) {
+  if(b===balls[0] && Math.abs(b.sy) > 0.1 && spd > 0.05) {
     // 자연 롤링에서의 ω
     const natSpin = spd * 15;  // 스케일된 자연회전
     const diff = b.sy - natSpin;
