@@ -110,16 +110,16 @@ const R=10;
 // 기준 샷: 0→17, c1=17.4
 // 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
-  mu_felt:      0.00275,  // 바닥 마찰 — 파워14=9쿠션, 파워7=5쿠션
-  mu_cushion:   0.20,     // 쿠션 마찰 (스핀→접선)
-  restitution:  0.882,    // 쿠션 법선 반발
-  spinX_decay:  0.10,     // 사이드스핀 감쇠 (오래 유지)
-  spinY_decay:  0.07,     // 전후진 스핀 감쇠
-  spinY_accel:  0.132,    // spinY → Follow/Draw (강한 팔로우)
+  mu_felt:      0.0023,   // 바닥 마찰 — rest=0.80 + 파워14=9쿠션
+  mu_cushion:   0.143,    // 쿠션 마찰 (스핀→접선)
+  restitution:  0.80,     // 쿠션 반발 (낮춰서 적정 정지)
+  spinX_decay:  0.16,     // 사이드스핀 감쇠
+  spinY_decay:  0.16,     // 전후진 스핀 감쇠
+  spinY_accel:  0.051,    // spinY → Follow/Draw
   spinX_curve:  0.00005,  // spinX → 커브
   squirt:       0.005,    // 스쿼트
-  reverse_grip1:0.0,      // 리버스 그립 — 첫 쿠션 (억제)
-  reverse_grip2:0.775,    // 리버스 그립 — 이후 쿠션 (활성)
+  reverse_grip1:0.025,    // 리버스 그립 — 첫 쿠션
+  reverse_grip2:0.958,    // 리버스 그립 — 이후 쿠션
   min_spd:      0.3,     // 정지 판정 (높여서 빠르게 멈춤)
 };
 
@@ -392,7 +392,7 @@ function physicsStep(b){
     const clamped=Math.min(accel, maxBoost); // Follow는 마찰 상쇄까지만
     b.vx+=(b.vx/spd)*clamped;
     b.vy+=(b.vy/spd)*clamped;
-    b.sy+=(natSpin-b.sy)*0.0035;
+    b.sy+=(natSpin-b.sy)*0.0095;
   }
 
   // spinX → 커브
@@ -467,7 +467,7 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
     if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,raw=(g.sy-ns)*P.spinY_accel;
       const c=Math.min(Math.max(raw,-spd*0.01),P.mu_felt*spd);
-      g.vx+=(g.vx/spd)*c;g.vy+=(g.vy/spd)*c;g.sy+=(ns-g.sy)*0.0035;}
+      g.vx+=(g.vx/spd)*c;g.vy+=(g.vy/spd)*c;g.sy+=(ns-g.sy)*0.0095;}
     g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
@@ -522,7 +522,7 @@ function startSim(){
 
   // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
   ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
-  ball.sy = tipY * power * 0.342; // 상하 전후진 스핀 (강화: 팔로우 지배)
+  ball.sy = tipY * power * 0.396; // 상하 전후진 스핀 (강화: 팔로우 지배)
   ball.bn = 0;                    // 쿠션 카운터 (grip 분리용)
 
   ghost={x:ball.x,y:ball.y};
