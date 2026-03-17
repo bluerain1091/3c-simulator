@@ -111,7 +111,7 @@ const R=10;
 // 정회전: c2=11.0, c3=6.0 | 무회전: c2=10.3, c3=6.7 | 역회전: c2=10.6, c3=5.0
 const P = {
   mu_felt:      0.0023,   // 바닥 마찰 — rest=0.80 + 파워14=9쿠션
-  mu_cushion:   0.143,    // 쿠션 마찰 (스핀→접선)
+  mu_cushion:   0.148,    // 쿠션 마찰 (스핀→접선)
   restitution:  0.80,     // 쿠션 반발 (낮춰서 적정 정지)
   spinX_decay:  0.16,     // 사이드스핀 감쇠
   spinY_decay:  0.16,     // 전후진 스핀 감쇠
@@ -443,18 +443,12 @@ function ballCollision(a,b){
   a.vx-=dvn*nx; a.vy-=dvn*ny;
   b.vx+=dvn*nx; b.vy+=dvn*ny;
 
-  // 스핀 전달
-  const spinTransfer = 0.08;
-  b.sx += -a.sx * spinTransfer;
-  b.sy += -a.sy * spinTransfer;
-
-  // 수구 스핀도 충돌로 감소
-  const aSpdAfter=Math.hypot(a.vx,a.vy);
-  const aSpdBefore=Math.hypot(a.vx+dvn*nx, a.vy+dvn*ny);
-  if(aSpdBefore>0.1){
-    const ratio=aSpdAfter/aSpdBefore;
-    a.sx*=ratio; a.sy*=ratio;
-  }
+  // 스핀 전달 (약하게)
+  b.sx += -a.sx * 0.05;
+  b.sy += -a.sy * 0.05;
+  // 충돌 시 회전 50% 보존 (충격에 의한 부분 소실)
+  a.sy *= 0.5;
+  a.sx *= 0.8;
   return true;
 }
 
