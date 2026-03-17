@@ -347,18 +347,22 @@ function cushionBounce(b, edge){
 
   const impF=Math.abs(vn);
 
-  // 법선 반사 (접선은 그대로 — 순수 기하 반사 보장)
+  // 법선 반사
   vn = -vn * P.restitution;
 
   // spinX → 접선 (쿠션 고무 마찰)
-  // 시계방향(+) → top/right에서 접선 감소, bottom/left에서 접선 증가
   const sxSign=(edge==='top'||edge==='right')?-1:1;
   const spinForce = P.mu_cushion * b.sx * impF * sxSign;
   const isReverse = (spinForce * vt < 0);
-  // 쿠션별 grip: 첫 쿠션은 억제, 이후는 활성
   const grip = isReverse ? (b.bn===0 ? P.reverse_grip1 : P.reverse_grip2) : 1.0;
   vt += spinForce * grip;
   b.bn = (b.bn||0) + 1;
+
+  // ★ 쿠션 마찰에 의한 자연 회전 발생
+  // 무회전 공이라도 쿠션에 닿으면 접선 슬라이딩으로 spinX가 생김
+  // 접선 속도 방향과 반대로 회전 발생 (쿠션 고무가 공을 잡음)
+  const naturalSpin = -vt * 0.015 * sxSign;
+  b.sx += naturalSpin;
 
   // 스핀 감쇠
   b.sx *= (1 - P.spinX_decay);
@@ -383,17 +387,19 @@ function physicsStep(b){
   const f=1-P.mu_felt;
   b.vx*=f; b.vy*=f;
 
-  // spinY → Follow: 감속 완화 / Draw: 추가 감속 — 절대 가속 안 함
+  // spinY → Follow/Draw
+  // Follow: 전진회전이 바닥 마찰을 통해 공을 밀어줌 (실제 가속 허용)
+  // Draw: 역회전이 공을 감속/정지
   if(Math.abs(b.sy)>0.05 && spd>0.3){
     const natSpin=spd*0.1;
-    const raw=(b.sy-natSpin)*P.spinY_accel;
-    // 양수(가속)면 마찰 상쇄까지만 허용 (순가속 금지)
-    const maxBoost=P.mu_felt*spd; // 마찰이 깎는 양
-    const accel=Math.max(raw, -spd*0.01); // Draw 감속 제한
-    const clamped=Math.min(accel, maxBoost); // Follow는 마찰 상쇄까지만
-    b.vx+=(b.vx/spd)*clamped;
-    b.vy+=(b.vy/spd)*clamped;
-    b.sy+=(natSpin-b.sy)*0.0095;
+    const spinDiff=b.sy-natSpin;
+    // Follow(spinDiff>0): 전진력 발생 — 공이 목적구 방향으로 밀려감
+    // Draw(spinDiff<0): 감속력 발생
+    const accel=spinDiff*P.spinY_accel;
+    b.vx+=(b.vx/spd)*accel;
+    b.vy+=(b.vy/spd)*accel;
+    // spinY 수렴 (바닥 마찰이 서서히 전달)
+    b.sy+=(natSpin-b.sy)*0.012;
   }
 
   // spinX → 커브
@@ -433,12 +439,19 @@ function ballCollision(a,b){
   a.vx-=dvn*nx; a.vy-=dvn*ny;
   b.vx+=dvn*nx; b.vy+=dvn*ny;
 
-  // 충돌 후 스핀 보정: 속도가 줄었으면 sy도 비례 감소 (재가속 방지)
-  const aSpdAfter=Math.hypot(a.vx,a.vy), bSpdAfter=Math.hypot(b.vx,b.vy);
+  // ★ 스핀 전달: 공끼리 마찰로 목적구에 반대 회전 발생
+  // 수구 spinX → 목적구에 반대 spinX (마찰 전달, 감소율 적용)
+  const spinTransfer = 0.25; // 스핀 전달 비율 (25%)
+  b.sx += -a.sx * spinTransfer;
+  b.sy += -a.sy * spinTransfer;
+
+  // 수구 스핀도 충돌로 감소 (속도 비례)
+  const aSpdAfter=Math.hypot(a.vx,a.vy);
   const aSpdBefore=Math.hypot(a.vx+dvn*nx, a.vy+dvn*ny);
-  if(aSpdBefore>0.1) { const ratio=aSpdAfter/aSpdBefore; a.sy*=ratio; a.sx*=ratio; }
-  // 맞은 공에 스핀 미세 전달
-  b.sx+=a.sx*0.03; b.sy+=a.sy*0.03;
+  if(aSpdBefore>0.1){
+    const ratio=aSpdAfter/aSpdBefore;
+    a.sx*=ratio; a.sy*=ratio;
+  }
   return true;
 }
 
@@ -466,9 +479,8 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,raw=(g.sy-ns)*P.spinY_accel;
-      const c=Math.min(Math.max(raw,-spd*0.01),P.mu_felt*spd);
-      g.vx+=(g.vx/spd)*c;g.vy+=(g.vy/spd)*c;g.sy+=(ns-g.sy)*0.0095;}
+    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,a=(g.sy-ns)*P.spinY_accel;
+      g.vx+=(g.vx/spd)*a;g.vy+=(g.vy/spd)*a;g.sy+=(ns-g.sy)*0.012;}
     g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
