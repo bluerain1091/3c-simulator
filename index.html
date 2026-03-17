@@ -401,9 +401,10 @@ function physicsStep(b){
     if(Math.abs(diff) > 0.5) {
       const velDelta = diff * 0.025;
       let clamped;
-      if(b.hitBall) {
-        // 충돌 후: 팔로우 가속 허용 (전진력), 캡 0.15
-        clamped = Math.max(-0.15, Math.min(0.05, velDelta));
+      if(b.hitBall && (b.followTimer||0)>0) {
+        // 충돌 후 타이머 내: 팔로우 가속
+        clamped = Math.max(-0.15, Math.min(0.03, velDelta));
+        b.followTimer--;
       } else {
         // 충돌 전: 가속 금지, 감속 완화만 (마찰의 90%)
         const frictionAmt = P.mu_felt * spd;
@@ -411,7 +412,7 @@ function physicsStep(b){
       }
       b.vx += (b.vx / Math.max(spd, 0.1)) * clamped;
       b.vy += (b.vy / Math.max(spd, 0.1)) * clamped;
-      if(b.hitBall) b.sy -= diff * 0.03; // 충돌 후에만 수렴 (빠르게)
+      b.sy -= diff * 0.02; // 수렴
     }
   }
 
@@ -456,9 +457,10 @@ function ballCollision(a,b){
   b.sx += -a.sx * 0.05;
   b.sy += -a.sy * 0.05;
   // 충돌 시 sy 5% 감소 (에너지 전달)
-  a.sy *= 0.85;
+  a.sy *= 0.7;
   // 충돌 플래그 (팔로우 활성화용)
   a.hitBall = true;
+  a.followTimer = 100; // 팔로우 100프레임 후 종료
   return true;
 }
 
@@ -524,10 +526,10 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
     if(Math.abs(g.sy)>0.1&&spd>0.05){
       const ns=spd*15,d=g.sy-ns;
       if(Math.abs(d)>0.5){
-        const cd=Math.max(-0.15,Math.min(0.05,d*0.025));
+        const cd=Math.max(-0.15,Math.min(0.03,d*0.025));
         g.vx+=(g.vx/Math.max(spd,0.1))*cd;
         g.vy+=(g.vy/Math.max(spd,0.1))*cd;
-        g.sy-=d*0.03;
+        g.sy-=d*0.02;
       }
     }
     g.x+=g.vx;g.y+=g.vy;
@@ -586,6 +588,7 @@ function startSim(){
   ball.sy = tipY * power * 20; // 상하 전후진 스핀 (natSpin=spd*15 기준)
   ball.bn = 0;                    // 쿠션 카운터 (grip 분리용)
   ball.hitBall = false;           // 충돌 전/후 팔로우 구분
+  ball.followTimer = 0;
 
   ghost={x:ball.x,y:ball.y};
   trail=[];bounces=0;st=S.SIM;aimLk=false;
