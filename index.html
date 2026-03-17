@@ -397,9 +397,13 @@ function physicsStep(b){
 
     if(Math.abs(diff) > 0.5) {
       // 슬라이딩: 마찰이 속도↔회전을 동시에 자연 롤링으로 수렴
-      const coupling = 0.025; // 커플링 강도 (팔로우: 2적구 도달)
-      b.vx += (b.vx / Math.max(spd, 0.1)) * diff * coupling;
-      b.vy += (b.vy / Math.max(spd, 0.1)) * diff * coupling;
+      const coupling = 0.025;
+      const velDelta = diff * coupling;
+      // 속도 변화 캡: 한 프레임에 최대 0.5px/frame 변화 (폭주 방지)
+      const maxDelta = 0.5;
+      const clamped = Math.max(-maxDelta, Math.min(maxDelta, velDelta));
+      b.vx += (b.vx / Math.max(spd, 0.1)) * clamped;
+      b.vy += (b.vy / Math.max(spd, 0.1)) * clamped;
       // 회전도 반대로 수렴
       b.sy -= diff * 0.02;
     }
@@ -424,27 +428,27 @@ function ballCollision(a,b){
   const dist=Math.hypot(dx,dy);
   if(dist>=R*2||dist<0.01)return false;
 
-  // 겹침 해소
+  // 겹침 해소 (충분히 밀어냄)
   const nx=dx/dist, ny=dy/dist;
-  const overlap=R*2-dist;
+  const overlap=R*2-dist+0.5; // 여유분 추가
   a.x-=nx*overlap/2; a.y-=ny*overlap/2;
   b.x+=nx*overlap/2; b.y+=ny*overlap/2;
 
   // 상대 속도
   const dvx=a.vx-b.vx, dvy=a.vy-b.vy;
   const dvn=dvx*nx+dvy*ny;
-  if(dvn<=0)return false; // 이미 멀어지는 중
+  if(dvn<=0)return false;
 
   // 같은 질량 탄성 충돌: 법선 성분 교환
   a.vx-=dvn*nx; a.vy-=dvn*ny;
   b.vx+=dvn*nx; b.vy+=dvn*ny;
 
-  // ★ 스핀 전달: 공끼리 마찰로 목적구에 반대 회전 발생
-  const spinTransfer = 0.08; // 스핀 전달 비율 (8% — 약하게)
+  // 스핀 전달
+  const spinTransfer = 0.08;
   b.sx += -a.sx * spinTransfer;
   b.sy += -a.sy * spinTransfer;
 
-  // 수구 스핀도 충돌로 감소 (속도 비례)
+  // 수구 스핀도 충돌로 감소
   const aSpdAfter=Math.hypot(a.vx,a.vy);
   const aSpdBefore=Math.hypot(a.vx+dvn*nx, a.vy+dvn*ny);
   if(aSpdBefore>0.1){
@@ -454,16 +458,50 @@ function ballCollision(a,b){
   return true;
 }
 
+/** 이동 전 연속 충돌 감지 (CCD) — 터널링 방지 */
+function checkBallCCD(a,b){
+  // a가 이동할 때 b를 관통하는지 미리 체크
+  // a의 이동 벡터와 b 중심 사이 최근접 거리 계산
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const dist=Math.hypot(dx,dy);
+  if(dist<R*2) return true; // 이미 겹침
+  if(Math.hypot(a.vx,a.vy)<0.01) return false;
+
+  // a의 이동 벡터
+  const mvx=a.vx, mvy=a.vy;
+  const mvLen=Math.hypot(mvx,mvy);
+  if(mvLen<0.1) return false;
+
+  // a→b 벡터를 이동 방향에 투영
+  const t=(dx*mvx+dy*mvy)/(mvLen*mvLen);
+  if(t<0||t>1) return false; // 이동 범위 밖
+
+  // 최근접점에서의 거리
+  const cx=a.x+mvx*t, cy=a.y+mvy*t;
+  const closeDist=Math.hypot(b.x-cx,b.y-cy);
+  if(closeDist<R*2){
+    // 충돌 지점으로 a를 이동시키고 충돌 처리
+    const penetrate=R*2-closeDist;
+    const backT=Math.max(0,t-penetrate/(mvLen+0.1));
+    a.x=a.x+mvx*backT-mvx; // 이동 취소 후 충돌 직전으로
+    a.y=a.y+mvy*backT-mvy;
+    return true;
+  }
+  return false;
+}
+
 /** 모든 공 물리 스텝 */
 function stepAllBalls(){
   // 각 공 이동
   for(const b of balls){
     if(Math.hypot(b.vx,b.vy)>=0.05||Math.abs(b.sy)>0.1||Math.abs(b.sx)>0.1) physicsStep(b);
   }
-  // 공끼리 충돌 (3공 조합)
-  for(let i=0;i<balls.length;i++)
-    for(let j=i+1;j<balls.length;j++)
-      ballCollision(balls[i],balls[j]);
+  // 공끼리 충돌 — 여러 번 체크 (겹침 완전 해소)
+  for(let pass=0;pass<3;pass++){
+    for(let i=0;i<balls.length;i++)
+      for(let j=i+1;j<balls.length;j++)
+        ballCollision(balls[i],balls[j]);
+  }
 }
 
 /** 모든 공 정지 확인 */
@@ -482,8 +520,9 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
     if(Math.abs(g.sy)>0.1&&spd>0.05){
       const ns=spd*15,d=g.sy-ns;
       if(Math.abs(d)>0.5){
-        g.vx+=(g.vx/Math.max(spd,0.1))*d*0.025;
-        g.vy+=(g.vy/Math.max(spd,0.1))*d*0.025;
+        const cd=Math.max(-0.5,Math.min(0.5,d*0.025));
+        g.vx+=(g.vx/Math.max(spd,0.1))*cd;
+        g.vy+=(g.vy/Math.max(spd,0.1))*cd;
         g.sy-=d*0.02;
       }
     }
@@ -540,7 +579,7 @@ function startSim(){
 
   // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
   ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
-  ball.sy = tipY * power * 30; // 상하 전후진 스핀 (natSpin=spd*15 기준)
+  ball.sy = tipY * power * 20; // 상하 전후진 스핀 (natSpin=spd*15 기준)
   ball.bn = 0;                    // 쿠션 카운터 (grip 분리용)
 
   ghost={x:ball.x,y:ball.y};
