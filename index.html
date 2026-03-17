@@ -730,7 +730,7 @@ function render(){
     drawOneBall(balls[1]);drawOneBall(balls[2]);
     drawBallWithTip(ball.x,ball.y);
   }else{
-    stepAllBalls();stepAllBalls();stepAllBalls(); // 3x 속도
+    for(let _s=0;_s<5;_s++)stepAllBalls(); // 5x 속도
     trail.push({x:ball.x,y:ball.y,a:1});
     if(allStopped())stopSim();
     // 마찰로 자연 정지 (파워14 → 최대 9쿠션)
