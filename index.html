@@ -381,31 +381,51 @@ function cushionBounce(b, edge){
  */
 function physicsStep(b){
   const spd=Math.hypot(b.vx,b.vy);
-  if(spd<P.min_spd)return false;
+  if(spd<P.min_spd&&Math.abs(b.sy)<0.1&&Math.abs(b.sx)<0.1)return false;
 
-  // 바닥 마찰
-  const f=1-P.mu_felt;
-  b.vx*=f; b.vy*=f;
+  // ★ 실제 당구 물리: 슬립 속도 기반 마찰 모델
+  // u = v + R × (k × ω) — 접촉점의 슬립 속도
+  // 2D에서: ux = vx - R*wy (wy=전진회전), uy = vy + R*wx (wx=사이드스핀)
+  // sy = forward spin (양수=팔로우), sx = side spin
+  const ux = b.vx + R * b.sy * 0.06;  // sy가 팔로우면 슬립이 뒤로
+  const uy = b.vy - R * b.sx * 0.06;  // sx가 사이드면 슬립이 옆으로
+  const uMag = Math.hypot(ux, uy);
 
-  // ★ SLDT 방식: Sliding → Rolling 상태 전이
-  // 슬라이딩 상태: 회전(sy)과 속도(spd)가 불일치
-  //   → 바닥 마찰이 두 값을 동시에 자연 롤링으로 수렴시킴
-  //   → 속도↑회전↓ (Follow) 또는 속도↓회전↑ (Draw)
-  // 롤링 상태: 회전=속도, 균일 감속만
-  const natSpin=spd*0.1;
-  if(Math.abs(b.sy)>0.01){
-    const diff=b.sy-natSpin;
-    const coupling=P.spinY_accel;
-    // 수구(큐로 친 공)만 강한 커플링, 목적구는 약하게
-    const cm = (b===balls[0]) ? 1200 : 40;
-    const velChange=diff*coupling*P.mu_felt*cm;
-    b.vx+=(b.vx/Math.max(spd,0.1))*velChange;
-    b.vy+=(b.vy/Math.max(spd,0.1))*velChange;
-    b.sy-=diff*coupling*0.5;
+  if(uMag > 0.02) {
+    // === 슬라이딩 상태: 슬립 있음 ===
+    const uHatX = ux / uMag, uHatY = uy / uMag;
+    const mu_s = 0.2;  // 슬라이딩 마찰계수
+    const g = 9.8;
+    const dt = 0.016;  // 프레임 시간 (~60fps)
+    const scale = 3.0;  // 시뮬 스케일 (픽셀→물리 보정)
+
+    // 선속도 변화: dv = -μg·û·dt
+    b.vx -= mu_s * g * uHatX * dt * scale;
+    b.vy -= mu_s * g * uHatY * dt * scale;
+
+    // 회전 변화: dω = (5μg)/(2R)·(k×û)·dt
+    // 2D에서: dsy = -(5μg)/(2R) * uHatX * dt (전진회전 방향)
+    //         dsx =  (5μg)/(2R) * uHatY * dt (사이드 방향)
+    const spinAccel = (5 * mu_s * g) / (2 * R) * dt * scale * 0.06;
+    b.sy -= spinAccel * uHatX;
+    b.sx += spinAccel * uHatY;
+
+  } else {
+    // === 롤링 상태: 슬립 없음 — 구름 마찰만 ===
+    const mu_r = 0.01;
+    const g = 9.8;
+    const dt = 0.016;
+    const scale = 3.0;
+    if(spd > 0.05) {
+      const drag = mu_r * g * dt * scale;
+      const factor = Math.max(0, 1 - drag / spd);
+      b.vx *= factor;
+      b.vy *= factor;
+      // 롤링: 회전 = 속도에 맞춤
+      b.sy = b.vx * 0.06 / R * (-1);
+      b.sx = b.vy * 0.06 / R;
+    }
   }
-
-  // spinX → 커브
-  b.vx+=b.sx*P.spinX_curve*spd;
 
   // 이동
   b.x+=b.vx; b.y+=b.vy;
@@ -460,7 +480,7 @@ function ballCollision(a,b){
 function stepAllBalls(){
   // 각 공 이동
   for(const b of balls){
-    if(Math.hypot(b.vx,b.vy)>=P.min_spd) physicsStep(b);
+    if(Math.hypot(b.vx,b.vy)>=0.05||Math.abs(b.sy)>0.1||Math.abs(b.sx)>0.1) physicsStep(b);
   }
   // 공끼리 충돌 (3공 조합)
   for(let i=0;i<balls.length;i++)
@@ -478,12 +498,21 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   const g={x:sx,y:sy,vx,vy,sx:spinX,sy:spinY};
   const path=[{x:g.x,y:g.y}];let bc=0;
   for(let i=0;i<4000;i++){
-    const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
-    const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    {const ns=spd*0.1;if(Math.abs(g.sy)>0.01){const d=g.sy-ns,vc=d*P.spinY_accel*P.mu_felt*1200;
-      g.vx+=(g.vx/Math.max(spd,0.1))*vc;g.vy+=(g.vy/Math.max(spd,0.1))*vc;
-      g.sy-=d*P.spinY_accel*0.5;}}
-    g.vx+=g.sx*P.spinX_curve*spd;
+    const spd=Math.hypot(g.vx,g.vy);
+    if(spd<0.05&&Math.abs(g.sy)<0.1&&Math.abs(g.sx)<0.1)break;
+    // 슬립 속도 계산
+    const ux=g.vx+R*g.sy*0.06, uy=g.vy-R*g.sx*0.06;
+    const uM=Math.hypot(ux,uy);
+    if(uM>0.02){
+      const uhx=ux/uM,uhy=uy/uM,ms=0.2,gg=9.8,dt=0.016,sc=3;
+      g.vx-=ms*gg*uhx*dt*sc;g.vy-=ms*gg*uhy*dt*sc;
+      const sa=(5*ms*gg)/(2*R)*dt*sc*0.06;
+      g.sy-=sa*uhx;g.sx+=sa*uhy;
+    }else if(spd>0.05){
+      const dr=0.01*9.8*0.016*3,fc=Math.max(0,1-dr/spd);
+      g.vx*=fc;g.vy*=fc;
+      g.sy=g.vx*0.06/R*(-1);g.sx=g.vy*0.06/R;
+    }
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
     if(g.y-R<=OY){g.y=OY+R;cushionBounce(g,'top');bo=true;}
