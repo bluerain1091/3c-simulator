@@ -387,20 +387,21 @@ function physicsStep(b){
   const f=1-P.mu_felt;
   b.vx*=f; b.vy*=f;
 
-  // spinY → Follow/Draw
-  // Follow: 마찰 감속을 완화 (덜 느려짐) — 절대 가속 아님
-  // Draw: 추가 감속 (더 빨리 멈춤)
-  if(Math.abs(b.sy)>0.05 && spd>0.3){
-    const natSpin=spd*0.1;
-    const spinDiff=b.sy-natSpin;
-    const raw=spinDiff*P.spinY_accel;
-    // Follow: 마찰의 80%까지만 상쇄 (공은 항상 감속)
-    // Draw: 추가 감속 허용
-    const frictionAmt=P.mu_felt*spd;
-    const clamped=Math.max(Math.min(raw, frictionAmt*0.8), -frictionAmt*2);
-    b.vx+=(b.vx/spd)*clamped;
-    b.vy+=(b.vy/spd)*clamped;
-    b.sy+=(natSpin-b.sy)*0.025; // 빠르게 자연회전에 수렴
+  // ★ SLDT 방식: Sliding → Rolling 상태 전이
+  // 슬라이딩 상태: 회전(sy)과 속도(spd)가 불일치
+  //   → 바닥 마찰이 두 값을 동시에 자연 롤링으로 수렴시킴
+  //   → 속도↑회전↓ (Follow) 또는 속도↓회전↑ (Draw)
+  // 롤링 상태: 회전=속도, 균일 감속만
+  const natSpin=spd*0.1;
+  if(Math.abs(b.sy)>0.01){
+    const diff=b.sy-natSpin; // 양수=Follow슬라이딩, 음수=Draw슬라이딩
+    const coupling=P.spinY_accel; // 마찰 커플링 강도
+    // 속도 조절: diff만큼 속도를 당기되, 마찰력에 비례
+    const velChange=diff*coupling*P.mu_felt*40;
+    b.vx+=(b.vx/Math.max(spd,0.1))*velChange;
+    b.vy+=(b.vy/Math.max(spd,0.1))*velChange;
+    // 회전도 동시에 반대로 수렴 (에너지 보존)
+    b.sy-=diff*coupling*0.5;
   }
 
   // spinX → 커브
@@ -480,9 +481,9 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    if(Math.abs(g.sy)>0.05&&spd>.3){const ns=spd*0.1,raw=(g.sy-ns)*P.spinY_accel;
-      const fa=P.mu_felt*spd,c=Math.max(Math.min(raw,fa*0.8),-fa*2);
-      g.vx+=(g.vx/spd)*c;g.vy+=(g.vy/spd)*c;g.sy+=(ns-g.sy)*0.025;}
+    {const ns=spd*0.1;if(Math.abs(g.sy)>0.01){const d=g.sy-ns,vc=d*P.spinY_accel*P.mu_felt*40;
+      g.vx+=(g.vx/Math.max(spd,0.1))*vc;g.vy+=(g.vy/Math.max(spd,0.1))*vc;
+      g.sy-=d*P.spinY_accel*0.5;}}
     g.vx+=g.sx*P.spinX_curve*spd;
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
