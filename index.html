@@ -115,7 +115,7 @@ const P = {
   restitution:  0.80,     // 쿠션 반발 (낮춰서 적정 정지)
   spinX_decay:  0.16,     // 사이드스핀 감쇠
   spinY_decay:  0.16,     // 전후진 스핀 감쇠
-  spinY_accel:  0.045,    // spinY → Follow/Draw (커플링 강도)
+  spinY_accel:  0.30,     // spinY → Follow/Draw (커플링 강도)
   spinX_curve:  0.00005,  // spinX → 커브
   squirt:       0.005,    // 스쿼트
   reverse_grip1:0.025,    // 리버스 그립 — 첫 쿠션
@@ -397,7 +397,7 @@ function physicsStep(b){
     const diff=b.sy-natSpin; // 양수=Follow슬라이딩, 음수=Draw슬라이딩
     const coupling=P.spinY_accel; // 마찰 커플링 강도
     // 속도 조절: diff만큼 속도를 당기되, 마찰력에 비례
-    const velChange=diff*coupling*P.mu_felt*230;
+    const velChange=diff*coupling*P.mu_felt*1200;
     b.vx+=(b.vx/Math.max(spd,0.1))*velChange;
     b.vy+=(b.vy/Math.max(spd,0.1))*velChange;
     // 회전도 동시에 반대로 수렴 (에너지 보존)
@@ -481,7 +481,7 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);if(spd<P.min_spd)break;
     const f=1-P.mu_felt;g.vx*=f;g.vy*=f;
-    {const ns=spd*0.1;if(Math.abs(g.sy)>0.01){const d=g.sy-ns,vc=d*P.spinY_accel*P.mu_felt*230;
+    {const ns=spd*0.1;if(Math.abs(g.sy)>0.01){const d=g.sy-ns,vc=d*P.spinY_accel*P.mu_felt*1200;
       g.vx+=(g.vx/Math.max(spd,0.1))*vc;g.vy+=(g.vy/Math.max(spd,0.1))*vc;
       g.sy-=d*P.spinY_accel*0.5;}}
     g.vx+=g.sx*P.spinX_curve*spd;
@@ -538,7 +538,7 @@ function startSim(){
 
   // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
   ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
-  ball.sy = tipY * power * 1.39; // 상하 전후진 스핀 (강화: 팔로우 지배)
+  ball.sy = tipY * power * 2.15; // 상하 전후진 스핀 (강화: 팔로우 지배)
   ball.bn = 0;                    // 쿠션 카운터 (grip 분리용)
 
   ghost={x:ball.x,y:ball.y};
