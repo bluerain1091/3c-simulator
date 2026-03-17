@@ -381,49 +381,27 @@ function cushionBounce(b, edge){
  */
 function physicsStep(b){
   const spd=Math.hypot(b.vx,b.vy);
-  if(spd<P.min_spd&&Math.abs(b.sy)<0.1&&Math.abs(b.sx)<0.1)return false;
+  if(spd<P.min_spd&&Math.abs(b.sy)<0.5)return false;
 
-  // ★ 실제 당구 물리: 슬립 속도 기반 마찰 모델
-  // u = v + R × (k × ω) — 접촉점의 슬립 속도
-  // 2D에서: ux = vx - R*wy (wy=전진회전), uy = vy + R*wx (wx=사이드스핀)
-  // sy = forward spin (양수=팔로우), sx = side spin
-  const ux = b.vx + R * b.sy * 0.06;  // sy가 팔로우면 슬립이 뒤로
-  const uy = b.vy - R * b.sx * 0.06;  // sx가 사이드면 슬립이 옆으로
-  const uMag = Math.hypot(ux, uy);
+  // 바닥 마찰
+  const f=1-P.mu_felt;
+  b.vx*=f; b.vy*=f;
 
-  if(uMag > 0.02) {
-    // === 슬라이딩 상태: 슬립 있음 ===
-    const uHatX = ux / uMag, uHatY = uy / uMag;
-    const mu_s = 0.2;  // 슬라이딩 마찰계수
-    const g = 9.8;
-    const dt = 0.016;  // 프레임 시간 (~60fps)
-    const scale = 3.0;  // 시뮬 스케일 (픽셀→물리 보정)
+  // 슬립 기반 팔로우/드로우 (실제 물리 단순화)
+  // sy > 0: 팔로우 (속도보다 회전이 빠름 → 마찰이 전진 방향으로)
+  // sy < 0: 드로우 (역회전 → 마찰이 역방향으로)
+  if(Math.abs(b.sy) > 0.1 && spd > 0.05) {
+    // 자연 롤링에서의 ω
+    const natSpin = spd * 15;  // 스케일된 자연회전
+    const diff = b.sy - natSpin;
 
-    // 선속도 변화: dv = -μg·û·dt
-    b.vx -= mu_s * g * uHatX * dt * scale;
-    b.vy -= mu_s * g * uHatY * dt * scale;
-
-    // 회전 변화: dω = (5μg)/(2R)·(k×û)·dt
-    // 2D에서: dsy = -(5μg)/(2R) * uHatX * dt (전진회전 방향)
-    //         dsx =  (5μg)/(2R) * uHatY * dt (사이드 방향)
-    const spinAccel = (5 * mu_s * g) / (2 * R) * dt * scale * 0.06;
-    b.sy -= spinAccel * uHatX;
-    b.sx += spinAccel * uHatY;
-
-  } else {
-    // === 롤링 상태: 슬립 없음 — 구름 마찰만 ===
-    const mu_r = 0.01;
-    const g = 9.8;
-    const dt = 0.016;
-    const scale = 3.0;
-    if(spd > 0.05) {
-      const drag = mu_r * g * dt * scale;
-      const factor = Math.max(0, 1 - drag / spd);
-      b.vx *= factor;
-      b.vy *= factor;
-      // 롤링: 회전 = 속도에 맞춤
-      b.sy = b.vx * 0.06 / R * (-1);
-      b.sx = b.vy * 0.06 / R;
+    if(Math.abs(diff) > 0.5) {
+      // 슬라이딩: 마찰이 속도↔회전을 동시에 자연 롤링으로 수렴
+      const coupling = 0.025; // 커플링 강도 (팔로우: 2적구 도달)
+      b.vx += (b.vx / Math.max(spd, 0.1)) * diff * coupling;
+      b.vy += (b.vy / Math.max(spd, 0.1)) * diff * coupling;
+      // 회전도 반대로 수렴
+      b.sy -= diff * 0.02;
     }
   }
 
@@ -499,19 +477,15 @@ function calcPP(sx,sy,vx,vy,spinX,spinY){
   const path=[{x:g.x,y:g.y}];let bc=0;
   for(let i=0;i<4000;i++){
     const spd=Math.hypot(g.vx,g.vy);
-    if(spd<0.05&&Math.abs(g.sy)<0.1&&Math.abs(g.sx)<0.1)break;
-    // 슬립 속도 계산
-    const ux=g.vx+R*g.sy*0.06, uy=g.vy-R*g.sx*0.06;
-    const uM=Math.hypot(ux,uy);
-    if(uM>0.02){
-      const uhx=ux/uM,uhy=uy/uM,ms=0.2,gg=9.8,dt=0.016,sc=3;
-      g.vx-=ms*gg*uhx*dt*sc;g.vy-=ms*gg*uhy*dt*sc;
-      const sa=(5*ms*gg)/(2*R)*dt*sc*0.06;
-      g.sy-=sa*uhx;g.sx+=sa*uhy;
-    }else if(spd>0.05){
-      const dr=0.01*9.8*0.016*3,fc=Math.max(0,1-dr/spd);
-      g.vx*=fc;g.vy*=fc;
-      g.sy=g.vx*0.06/R*(-1);g.sx=g.vy*0.06/R;
+    if(spd<P.min_spd&&Math.abs(g.sy)<0.5)break;
+    g.vx*=(1-P.mu_felt);g.vy*=(1-P.mu_felt);
+    if(Math.abs(g.sy)>0.1&&spd>0.05){
+      const ns=spd*15,d=g.sy-ns;
+      if(Math.abs(d)>0.5){
+        g.vx+=(g.vx/Math.max(spd,0.1))*d*0.025;
+        g.vy+=(g.vy/Math.max(spd,0.1))*d*0.025;
+        g.sy-=d*0.02;
+      }
     }
     g.x+=g.vx;g.y+=g.vy;
     let bo=false;
@@ -566,7 +540,7 @@ function startSim(){
 
   // 스핀 부여: tipX > 0 = 오른쪽 치기 = 오른쪽 스핀
   ball.sx = -tipX;               // 큐 오프셋 → 스핀 반전 (왼쪽 치면 시계방향)
-  ball.sy = tipY * power * 2.15; // 상하 전후진 스핀 (강화: 팔로우 지배)
+  ball.sy = tipY * power * 30; // 상하 전후진 스핀 (natSpin=spd*15 기준)
   ball.bn = 0;                    // 쿠션 카운터 (grip 분리용)
 
   ghost={x:ball.x,y:ball.y};
@@ -869,7 +843,7 @@ function render(){
         let ndx=(c1h.x-ball.x),ndy=(c1h.y-ball.y);const len=Math.hypot(ndx,ndy);ndx/=len;ndy/=len;
         if(sqtOn&&tipX!==0){const sq=-tipX*P.squirt*(power/7);const cs=Math.cos(sq),sn=Math.sin(sq);
           const nx=ndx*cs-ndy*sn,ny=ndx*sn+ndy*cs;ndx=nx;ndy=ny;}
-        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,-tipX,tipY*power*0.342);
+        ppPath=calcPP(ball.x,ball.y,ndx*power,ndy*power,-tipX,tipY*power*15);
         drawPP(ppPath);
       }
     }else{resetInfo();}
