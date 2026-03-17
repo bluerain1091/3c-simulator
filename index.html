@@ -630,6 +630,110 @@ function drawBallWithTip(x,y){
   X.fill();X.strokeStyle='#fff';X.lineWidth=.7;X.stroke();
 }
 
+// ============================================================
+//  공 두께(Thickness) 시스템 — 8등분 + 1/3
+// ============================================================
+
+/**
+ * 수구 궤적이 목적구에 닿는 두께 계산
+ * 반환: {ball, ghostX, ghostY, thick, dist, targetDx, targetDy, cueDx, cueDy} 또는 null
+ */
+function calcThickness(bx,by,dx,dy){
+  const len=Math.hypot(dx,dy);if(len<0.1)return null;
+  const nx=dx/len, ny=dy/len;
+  let best=null, bestT=Infinity;
+
+  for(let i=1;i<=2;i++){
+    const tb=balls[i];
+    // 수구→마우스 방향 직선에서 목적구 중심까지 최근접 거리
+    const cx=tb.x-bx, cy=tb.y-by;
+    const t=cx*nx+cy*ny; // 투영 거리
+    if(t<R)continue; // 뒤에 있음
+    const perpX=bx+nx*t-tb.x, perpY=by+ny*t-tb.y;
+    const dist=Math.hypot(perpX,perpY);
+    if(dist>=R*2)continue; // 안 닿음
+
+    if(t<bestT){
+      bestT=t;
+      // 실제 접촉점: 수구 중심이 목적구 중심에서 2R 거리인 점
+      const contactT=t-Math.sqrt(4*R*R-dist*dist);
+      const gx=bx+nx*contactT, gy=by+ny*contactT;
+      // 두께: 1=정면, 0=스침
+      const thick=1-dist/(2*R);
+
+      // 분리각: 목적구는 접촉선 방향, 수구는 직각 방향
+      const toDx=tb.x-gx, toDy=tb.y-gy;
+      const toLen=Math.hypot(toDx,toDy);
+      const tdx=toDx/toLen, tdy=toDy/toLen;
+      // 수구 진행: 입사 벡터에서 법선 성분 제거
+      const dot=nx*tdx+ny*tdy;
+      const cdx=nx-dot*tdx, cdy=ny-dot*tdy;
+
+      best={ball:tb, gx,gy, thick, dist,
+        tdx,tdy, cdx,cdy, contactT};
+    }
+  }
+  return best;
+}
+
+/** 두께를 8등분/1/3 표기로 변환 */
+function thickLabel(t){
+  if(t>=0.99) return '정면';
+  if(t<=0.01) return '미스';
+  // 1/3 체크
+  if(Math.abs(t-1/3)<0.02) return '1/3';
+  if(Math.abs(t-2/3)<0.02) return '2/3';
+  // 8등분
+  const e=Math.round(t*8);
+  if(e===0)return '극얇';
+  if(e===8)return '정면';
+  return e+'/8';
+}
+
+/** 두께 시각화 */
+function drawThickness(hit,dx,dy){
+  if(!hit)return;
+  const {gx,gy,thick,ball:tb,tdx,tdy,cdx,cdy}=hit;
+
+  // 고스트 수구 (접촉 위치)
+  X.beginPath();X.arc(gx,gy,R,0,Math.PI*2);
+  X.strokeStyle='rgba(255,255,255,.5)';X.lineWidth=1;X.stroke();
+  X.fillStyle='rgba(255,255,255,.08)';X.fill();
+
+  // 접촉선 (수구→목적구 중심)
+  X.beginPath();X.moveTo(gx,gy);X.lineTo(tb.x,tb.y);
+  X.strokeStyle='rgba(255,100,100,.5)';X.lineWidth=1;X.stroke();
+
+  // 목적구 예상 진행방향
+  const tl=60;
+  X.beginPath();X.moveTo(tb.x,tb.y);X.lineTo(tb.x+tdx*tl,tb.y+tdy*tl);
+  X.strokeStyle='rgba(255,200,50,.6)';X.lineWidth=1.5;X.setLineDash([4,3]);X.stroke();X.setLineDash([]);
+
+  // 수구 예상 진행방향 (두께 < 정면일 때)
+  if(thick<0.95){
+    const cl=Math.hypot(cdx,cdy);
+    if(cl>0.01){
+      const cnx=cdx/cl,cny=cdy/cl;
+      X.beginPath();X.moveTo(gx,gy);X.lineTo(gx+cnx*tl,gy+cny*tl);
+      X.strokeStyle='rgba(100,200,255,.6)';X.lineWidth=1.5;X.setLineDash([4,3]);X.stroke();X.setLineDash([]);
+    }
+  }
+
+  // 두께 겹침 표시 (채워진 호)
+  const ang=Math.atan2(tb.y-gy,tb.x-gx);
+  const halfArc=Math.acos(Math.max(-1,Math.min(1,1-thick)));
+  X.beginPath();X.arc(gx,gy,R,ang-halfArc,ang+halfArc);
+  X.lineTo(gx,gy);X.closePath();
+  X.fillStyle=`rgba(255,255,100,${0.15+thick*0.2})`;X.fill();
+
+  // 두께 라벨
+  const label=thickLabel(thick);
+  const pct=Math.round(thick*100);
+  X.font='bold 11px sans-serif';X.textAlign='center';X.textBaseline='bottom';
+  X.fillStyle='#ffd700';
+  X.fillText(`${label} (${pct}%)`,gx,gy-R-6);
+}
+
 function drawExt(h){if(!h)return;
   X.beginPath();X.moveTo(ball.x,ball.y);X.lineTo(h.x,h.y);
   X.strokeStyle='rgba(0,180,255,.6)';X.lineWidth=1.5;X.setLineDash([4,4]);X.stroke();X.setLineDash([]);
@@ -726,6 +830,12 @@ function render(){
         drawPP(ppPath);
       }
     }else{resetInfo();}
+
+    // 두께 계산 및 시각화
+    const aimDx=mouse.x-ball.x, aimDy=mouse.y-ball.y;
+    const thickHit=calcThickness(ball.x,ball.y,aimDx,aimDy);
+    drawThickness(thickHit,aimDx,aimDy);
+
     // 목적구 그리기 (수구 뒤에)
     drawOneBall(balls[1]);drawOneBall(balls[2]);
     drawBallWithTip(ball.x,ball.y);
