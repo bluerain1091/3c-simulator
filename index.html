@@ -394,13 +394,13 @@ function physicsStep(b){
   // 롤링 상태: 회전=속도, 균일 감속만
   const natSpin=spd*0.1;
   if(Math.abs(b.sy)>0.01){
-    const diff=b.sy-natSpin; // 양수=Follow슬라이딩, 음수=Draw슬라이딩
-    const coupling=P.spinY_accel; // 마찰 커플링 강도
-    // 속도 조절: diff만큼 속도를 당기되, 마찰력에 비례
-    const velChange=diff*coupling*P.mu_felt*1200;
+    const diff=b.sy-natSpin;
+    const coupling=P.spinY_accel;
+    // 수구(큐로 친 공)만 강한 커플링, 목적구는 약하게
+    const cm = (b===balls[0]) ? 1200 : 40;
+    const velChange=diff*coupling*P.mu_felt*cm;
     b.vx+=(b.vx/Math.max(spd,0.1))*velChange;
     b.vy+=(b.vy/Math.max(spd,0.1))*velChange;
-    // 회전도 동시에 반대로 수렴 (에너지 보존)
     b.sy-=diff*coupling*0.5;
   }
 
@@ -442,8 +442,7 @@ function ballCollision(a,b){
   b.vx+=dvn*nx; b.vy+=dvn*ny;
 
   // ★ 스핀 전달: 공끼리 마찰로 목적구에 반대 회전 발생
-  // 수구 spinX → 목적구에 반대 spinX (마찰 전달, 감소율 적용)
-  const spinTransfer = 0.25; // 스핀 전달 비율 (25%)
+  const spinTransfer = 0.08; // 스핀 전달 비율 (8% — 약하게)
   b.sx += -a.sx * spinTransfer;
   b.sy += -a.sy * spinTransfer;
 
