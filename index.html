@@ -351,7 +351,7 @@ function cushionBounceSI(b,edge){
   if(Math.abs(cs)>0.001){const f=Math.min(mf,Math.abs(cs));vt-=f*Math.sign(cs);b.w[2]+=(f*sS)/P.R*0.4;}
   if(hz){b.v[1]=vn;b.v[0]=vt;}else{b.v[0]=vn;b.v[1]=vt;}
   const tw0=-b.v[1]/P.R,tw1=b.v[0]/P.R;
-  b.w[0]+=(tw0-b.w[0])*0.5;b.w[1]+=(tw1-b.w[1])*0.5;
+  b.w[0]+=(tw0-b.w[0])*0.3;b.w[1]+=(tw1-b.w[1])*0.3;
   b.bn=(b.bn||0)+1;
 }
 
