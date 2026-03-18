@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3C Simulator - 파이브 앤 하프 시스템</title>
+<title>3C Simulator</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;
@@ -38,12 +38,15 @@ canvas#cv{border-radius:6px;cursor:crosshair}
 </style>
 </head>
 <body>
-<h1>3C Simulator - 파이브 앤 하프 시스템</h1>
+<h1>3C Simulator</h1>
 <div id="info">
-  <div>수구: <span id="vc">-</span></div>
-  <div>1쿠션: <span id="v1">-</span></div>
-  <div>3쿠션: <span id="v3">-</span></div>
-  <div>공식: <span id="vf">수구 − 1쿠션 = 3쿠션</span></div>
+  <input type="checkbox" id="sys-cb" style="accent-color:#d4a017"><label for="sys-cb" style="color:#aaa;font-size:.78rem">5½ 시스템</label>
+  <div id="sys-info" style="display:none;gap:14px">
+    <span>수구: <span id="vc">-</span></span>
+    <span>1쿠션: <span id="v1">-</span></span>
+    <span>3쿠션: <span id="v3">-</span></span>
+    <span>공식: <span id="vf">수구 − 1쿠션 = 3쿠션</span></span>
+  </div>
   <div id="dir">-</div>
 </div>
 <div id="ctrl">
@@ -67,7 +70,7 @@ canvas#cv{border-radius:6px;cursor:crosshair}
   <span id="stats"></span>
 </div>
 <canvas id="cv"></canvas>
-<div id="help">드래그:이동 · 마우스:겨냥 · 클릭:고정 · Space:발사 · 화살표:당점0.5 · WASD:당점1.0 · Z:되돌리기 · R:리셋 · P:물리예측</div>
+<div id="help">드래그:이동 · 마우스:겨냥 · 클릭:고정 · Space:발사 · 화살표:당점 · WASD:당점 · Q/E:파워↓↑ · Z:되돌리기 · R:리셋</div>
 <div class="leg">
   <span><i style="background:#88ccff"></i>수구</span>
   <span><i style="background:#ffcc44"></i>1쿠션</span>
@@ -779,8 +782,9 @@ function render(){
     // 쿠션 날 점 제거됨
 
     if(c1h){
-      // 5&half 시스템 (상단 쿠션 조준 시에만)
-      if(c1h.edge==='top'){
+      const sysOn=document.getElementById('sys-cb').checked;
+      // 5&half 시스템 (체크 + 상단 쿠션 조준 시에만)
+      if(sysOn&&c1h.edge==='top'){
         const c1v=calcC1Val(c1h,sys);
         const ext=calcExt(ball.x,ball.y,c1h.x,c1h.y,sys);
         const cv_=ext.val;
@@ -791,7 +795,6 @@ function render(){
           updateInfo(cv_,c1v,traj?traj.c3v:null,traj?traj.oor:false,dir);
         }else{drawAim(c1h);resetInfo();}
       }else{
-        // 상단 외 쿠션: 겨냥선만 표시
         drawAim(c1h);
         resetInfo();
       }
@@ -901,12 +904,17 @@ document.addEventListener('keydown',e=>{
   if(e.code==='Space'){e.preventDefault();st===S.SIM?stopSim():startSim();}
   if(e.key==='r'||e.key==='R')resetBall();
   if(e.key==='z'||e.key==='Z')undoBall();
+  if(e.key==='q'||e.key==='Q'){power=Math.max(1,power-0.5);document.getElementById('pw').value=power;document.getElementById('pv').textContent=power;}
+  if(e.key==='e'||e.key==='E'){power=Math.min(14,power+0.5);document.getElementById('pw').value=power;document.getElementById('pv').textContent=power;}
   if(e.key==='p'||e.key==='P')showPP=!showPP;
 });
 
 document.getElementById('pw').addEventListener('input',e=>{power=+e.target.value;document.getElementById('pv').textContent=power;});
 document.getElementById('sqt').addEventListener('change',e=>{sqtOn=e.target.checked;});
 document.getElementById('shoot').addEventListener('click',()=>{st===S.SIM?stopSim():startSim();});
+document.getElementById('sys-cb').addEventListener('change',e=>{
+  document.getElementById('sys-info').style.display=e.target.checked?'flex':'none';
+});
 
 render();
 </script>
