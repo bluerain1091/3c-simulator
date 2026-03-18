@@ -114,10 +114,10 @@ const P = {
   R: 0.03275,       // 공 반지름 (m)
   g: 9.8,            // 중력
   mu_s: 0.2,         // 슬라이딩 마찰
-  mu_r: 0.02,        // 구름 마찰
+  mu_r: 0.015,       // 구름 마찰
   mu_sp: 0.12,       // 스피닝 마찰 (사이드스핀 빠른 감쇠)
   mu_ball: 0.06,     // 공끼리 마찰 (throw)
-  e_cush: 0.82,      // 쿠션 반발
+  e_cush: 0.813,     // 쿠션 반발
   mu_cush: 0.2,      // 쿠션 마찰
   TBL_W: 2.84,       // 테이블 (m)
   TBL_H: 1.42,
@@ -128,7 +128,7 @@ const P = {
 const PXM = TW / P.TBL_W;   // 281.69 px/m
 const DT = 1/300;             // 5substeps × 60fps
 const PW2SI = 1/(PXM*DT);    // power→m/s 변환 (1.065)
-const WZ_SCALE = 0.95;        // 스핀 스케일
+const WZ_SCALE = 1.1;         // 스핀 스케일
 
 // --- 당점 ---
 let tipX = -2.0;  // -4 ~ +4 (좌우) — 기본 10:30 = 왼쪽 상단
@@ -351,7 +351,7 @@ function cushionBounceSI(b,edge){
   if(Math.abs(cs)>0.001){const f=Math.min(mf,Math.abs(cs));vt-=f*Math.sign(cs);b.w[2]+=(f*sS)/P.R*0.4;}
   if(hz){b.v[1]=vn;b.v[0]=vt;}else{b.v[0]=vn;b.v[1]=vt;}
   const tw0=-b.v[1]/P.R,tw1=b.v[0]/P.R;
-  b.w[0]+=(tw0-b.w[0])*0.5;b.w[1]+=(tw1-b.w[1])*0.5;
+  b.w[0]+=(tw0-b.w[0])*0.247;b.w[1]+=(tw1-b.w[1])*0.247;
   b.bn=(b.bn||0)+1;
 }
 
